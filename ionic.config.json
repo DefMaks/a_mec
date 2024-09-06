@@ -1,0 +1,7 @@
+{
+  "name": "a_mec",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
