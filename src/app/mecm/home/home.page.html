@@ -1,0 +1,508 @@
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar mode="ios">
+      <ion-title size="large">Blank</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <!-- TEACHER  -->
+  <ng-container *ngIf="appGlobal.user?.role === 'teacher'">
+    <ion-grid fixed>
+      <ion-row>
+        <ion-col sizeXs="12" sizeSm="12" sizeMd="6" sizeLg="9">
+          <ion-row class="ion-no-padding ion-no-margin">
+            <ion-col sizeSm="12" class="ion-padding">
+              <ion-card class="ion-padding" color="lightgrey" mode="ios">
+                <ion-card-header>
+                  <ion-card-subtitle>Messages</ion-card-subtitle>
+                </ion-card-header>
+                <h1 class="ion-text-right">
+                  <ion-row class="ion-no-margin ion-no-padding">
+                    <ion-col size="6" class="ion-text-left">
+                      <ion-icon
+                        name="mail-outline"
+                        style="vertical-align: -4px; margin-right: 5px"
+                      ></ion-icon>
+                      @if(appGlobal.chatlog?.read !== null){
+                      <strong> {{appGlobal.chatlog?.read}} </strong>
+                      } @else { 0 }
+                    </ion-col>
+                    <ion-col size="6"
+                      ><ion-icon
+                        [color]="appGlobal.chatlog?.unread > 0 ? 'teal' : 'silversand'"
+                        name="mail-unread-outline"
+                        style="vertical-align: -4px; margin-right: 5px"
+                      ></ion-icon>
+                      @if(appGlobal.chatlog?.unread !== null){
+                      <strong> {{appGlobal.chatlog?.unread}} </strong>
+                      } @else { 0 }
+                    </ion-col>
+                  </ion-row>
+                </h1>
+              </ion-card></ion-col
+            >
+            <ion-col sizeMd="12" class="ion-padding"></ion-col>
+          </ion-row>
+          <ion-row class="ion-no-padding ion-no-margin">
+            <ion-col sizeSm="12" sizeMd="12" class="ion-padding">
+              <ion-card
+                class="ion-padding border-25"
+                color="lightgrey"
+                mode="ios"
+              >
+                <ion-card-header>
+                  <ion-card-subtitle>
+                    {{appGlobal.user?.teachers_classes?.length > 1 ? 'Mes
+                    Classes' : 'Ma Classe' }}
+                  </ion-card-subtitle>
+                </ion-card-header>
+                <h1 class="ion-text-right">
+                  <ng-container
+                    *ngFor="let classe of appGlobal.user?.teachers_classes"
+                  >
+                    <ng-container *ngIf="classe.Classes.students">
+                      {{classe.Classes.students.length}}
+                    </ng-container>
+                  </ng-container>
+                  <!-- {{appGlobal.user?.teachers_classes.length}} -->
+                  <!-- {{appGlobal.user?.teachers_classes[0].Classes.students.length}} -->
+                </h1>
+              </ion-card>
+            </ion-col>
+            <ion-col sizeSm="12" sizeMd="12" class="ion-padding">
+              <ion-card class="ion-padding" color="lightgrey" mode="ios">
+                <ion-card-header>
+                  <ion-card-subtitle>Meilleur score</ion-card-subtitle>
+                </ion-card-header>
+                <h1 class="ion-text-right">100%</h1>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col size="6" class="ion-padding"></ion-col>
+            <ion-col size="6" class="ion-padding"></ion-col>
+          </ion-row>
+
+          <!-- <div id="container">
+          <strong>Ready to create an app?</strong>
+          <p>
+            Start with Ionic
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://ionicframework.com/docs/components"
+              >UI Components</a
+            >
+          </p>
+        </div> -->
+        </ion-col>
+        <ion-col
+          sizeXs="12"
+          sizeSm="12"
+          sizeMd="6"
+          sizeLg="3"
+          class="user-preview"
+        >
+          <ion-card
+            mode="ios"
+            class="ion-no-margin ion-padding-bottom"
+            color="white"
+          >
+            <ion-card-header>
+              <ion-card-subtitle>
+                <!-- <p>Né le 17/03/1986</p> -->
+                <ng-container *ngIf="appGlobal?.user; else loadingClasses">
+                  <ng-container *ngIf="appGlobal.user?.teachers_classes">
+                    Classe{{appGlobal.user?.teachers_classes.length > 1 ? 's' :
+                    '' }}:
+
+                    <ng-container
+                      [ngSwitch]="appGlobal.user?.teachers_classes.length"
+                    >
+                      <ng-container *ngSwitchCase="0"
+                        >Aucune classe</ng-container
+                      >
+                      <ng-container *ngSwitchCase="1">
+                        {{ appGlobal.user?.teachers_classes[0].Classes.name }}
+                      </ng-container>
+                      <ng-container *ngSwitchDefault>
+                        <ng-container
+                          >{{ appGlobal.user?.teachers_classes | classList
+                          }}</ng-container
+                        >
+                      </ng-container>
+                    </ng-container>
+                  </ng-container>
+                </ng-container>
+                <ng-template #loadingClasses></ng-template>
+              </ion-card-subtitle>
+              <ion-card-title>
+                {{appGlobal.user?.pseudo || appGlobal.user?.names}}
+              </ion-card-title>
+            </ion-card-header>
+
+            <ion-item color="transparent">
+              <ng-container
+                *ngIf="appGlobal.user?.active === null; else notSuspended"
+              >
+                <ion-icon
+                  color="lightgrey"
+                  name="radio-button-on"
+                  slot="end"
+                ></ion-icon>
+              </ng-container>
+              <ng-template #notSuspended>
+                <ion-icon
+                  [color]="appGlobal.user?.active ? 'green' : 'orange' "
+                  name="radio-button-on"
+                  slot="end"
+                ></ion-icon>
+              </ng-template>
+              <ion-label>Status compte :</ion-label>
+            </ion-item>
+
+            <ion-item color="transparent">
+              <!-- <ion-icon
+              color="lightgrey"
+              name="radio-button-on"
+              slot="end"
+            ></ion-icon> -->
+              <ion-badge slot="end" color="lightgrey" mode="ios">
+                <ng-container
+                  *ngIf="appGlobal.user?.lessons?.length; else noQuizFound"
+                >
+                  <ng-container *ngIf="appGlobal?.totalQuizLength">
+                    {{ appGlobal.totalQuizLength }}
+                  </ng-container>
+                  <ng-container *ngIf="!appGlobal?.totalQuizLength">
+                    0
+                  </ng-container>
+                </ng-container>
+                <ng-template #noQuizFound> 0 </ng-template>
+              </ion-badge>
+              <ion-label>Quiz rédigés </ion-label>
+            </ion-item>
+
+            <ion-item color="transparent">
+              <!-- <ion-icon
+              color="lightgrey"
+              name="radio-button-on"
+              slot="end"
+            ></ion-icon> -->
+              <ion-badge slot="end" color="lightgrey" mode="ios">
+                <ng-container
+                  *ngIf="appGlobal.user?.lessons; else noLessonFound"
+                >
+                  {{appGlobal.user?.lessons.length}}
+                </ng-container>
+                <ng-template #noLessonFound>0</ng-template>
+              </ion-badge>
+              <ion-label>Cours redigés </ion-label>
+            </ion-item>
+
+            <ion-item color="transparent">
+              <!-- <ion-icon
+              color="lightgrey"
+              name="radio-button-on"
+              slot="end"
+            ></ion-icon> -->
+              <ion-badge slot="end" color="lightgrey" mode="ios">2%</ion-badge>
+              <ion-label>Taux réussite </ion-label>
+            </ion-item>
+            <ion-item-divider class="ion-margin-vertical" color="white">
+              <ion-label>Suggestions à l'administrateur</ion-label>
+            </ion-item-divider>
+
+            <ion-item color="transparent">
+              <ion-button
+                class="ion-text-center"
+                slot="end"
+                id="open-modal"
+                fill="clear"
+              >
+                <ion-icon name="chatbox-ellipses" color="teal"></ion-icon>
+              </ion-button>
+
+              <ion-label>Proposer contenu</ion-label>
+            </ion-item>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- INLINE MODAL -->
+    <ion-modal
+      trigger="open-modal"
+      mode="ios"
+      (willDismiss)="onWillDismiss($event)"
+      id="suggest-modal"
+    >
+      <ng-template>
+        <ion-header class="ion-no-border" [translucent]="true">
+          <ion-toolbar>
+            <ion-buttons mode="ios" slot="end">
+              <ion-button
+                fill="solid"
+                mode="ios"
+                color="teal"
+                class="radius-15"
+                (click)="fermer()"
+                >Fermer</ion-button
+              >
+            </ion-buttons>
+            <ion-title>Proposer du contenu à l'administrateur</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <ion-item>
+            <ion-label>Sujet</ion-label>
+            <ion-select
+              mode="md"
+              interface="popover"
+              placeholder="Choisir le sujet de proposition"
+            >
+              <ion-select-option value="subject">Matière</ion-select-option>
+              <ion-select-option value="course">Cours</ion-select-option>
+              <br />
+              <ion-select-option value="classe">Classe</ion-select-option>
+              <ion-select-option value="level">Niveau</ion-select-option>
+              <ion-select-option value="field">Section</ion-select-option>
+              <ion-select-option value="option">Option</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked"
+              >Détaillez votre proposition</ion-label
+            >
+            <ion-textarea placeholder="Écrire ici ..."></ion-textarea>
+          </ion-item>
+        </ion-content>
+        <ion-footer>
+          <ion-toolbar color="teal">
+            <!-- <ion-title> -->
+            <ion-button
+              color="teal"
+              expand="block"
+              mode="ios"
+              shape="round"
+              size="small"
+              [disabled]="adminProposition.details && adminProposition.subject"
+            >
+              Proposer
+            </ion-button>
+            <!-- </ion-title> -->
+          </ion-toolbar>
+        </ion-footer>
+      </ng-template>
+    </ion-modal>
+  </ng-container>
+
+  <!-- SUPER ADMIN  -->
+  <ion-grid fixed *ngIf="appGlobal.user?.role === 'super_admin'">
+    <ion-row>
+      <ion-col sizeMd="6">
+        <ion-card
+          class="ion-padding ion-no-margin"
+          color="lightgrey"
+          mode="ios"
+        >
+          <ion-card-header>
+            <ion-card-subtitle>Classes</ion-card-subtitle>
+          </ion-card-header>
+          <h1 class="ion-text-right" style="font-size: 77px">
+            <ng-container *ngIf="appGlobal.classes; else noStudent">
+              {{appGlobal.classes?.length}}
+              <ion-fab
+                vertical="bottom"
+                horizontal="end"
+                slot="fixed"
+                edge="true"
+                [routerLink]="['/app/all-students']"
+              >
+                <ion-fab-button color="teal" size="small">
+                  <ion-icon name="caret-forward-outline"></ion-icon>
+                </ion-fab-button>
+              </ion-fab>
+            </ng-container>
+            <ng-template #noStudent> 0 </ng-template>
+          </h1>
+        </ion-card>
+      </ion-col>
+      <ion-col sizeMd="6">
+        <ion-card
+          class="ion-padding ion-no-margin"
+          color="lightgrey"
+          mode="ios"
+        >
+          <ion-card-header>
+            <ion-card-subtitle
+              >Niveaux {{appGlobal.niveaux?.length}}
+            </ion-card-subtitle>
+          </ion-card-header>
+          <!-- <h1 class="ion-text-right">
+            <ng-container *ngIf="appGlobal.classes; else noNivel">
+            </ng-container>
+            <ng-template #noNivel> N/A </ng-template>
+          </h1> -->
+          <ng-container *ngIf="appGlobal.classes; else noNivel">
+            <div *ngFor="let item of appGlobal?.niveaux">
+              <h5>
+                •
+                <strong
+                  >{{item.name}} : {{item.Classes.length}}
+                  classe{{item.Classes.length > 1 ? 's' : ''}}
+                </strong>
+              </h5>
+            </div>
+          </ng-container>
+          <ng-template #noNivel>
+            <h1 class="ion-text-right">
+              <ng-template #noNivel> N/A </ng-template>
+            </h1>
+          </ng-template>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+    <br />
+    <hr />
+    <br />
+    <ion-row>
+      <ion-col size="12" sizeSm="6" sizeMd="6" sizeLg="3">
+        <ion-card
+          class="ion-padding ion-no-margin"
+          color="lightgrey"
+          mode="ios"
+        >
+          <ion-card-header>
+            <ion-card-subtitle>Elèves</ion-card-subtitle>
+          </ion-card-header>
+          <h1 class="ion-text-right">
+            <ng-container
+              *ngIf="appGlobal.usersByRoles.students; else noStudent"
+            >
+              {{appGlobal.usersByRoles.students?.length}}
+              <ion-fab
+                vertical="bottom"
+                horizontal="end"
+                slot="fixed"
+                edge="true"
+                [routerLink]="['/app/all-students']"
+              >
+                <ion-fab-button color="teal" size="small">
+                  <ion-icon name="caret-forward-outline"></ion-icon>
+                </ion-fab-button>
+              </ion-fab>
+            </ng-container>
+            <ng-template #noStudent> 0 </ng-template>
+          </h1>
+        </ion-card>
+      </ion-col>
+      <ion-col size="12" sizeSm="6" sizeMd="6" sizeLg="3">
+        <ion-card
+          class="ion-padding ion-no-margin"
+          color="lightgrey"
+          mode="ios"
+        >
+          <ion-card-header mode="ios">
+            <ion-card-subtitle>Professeurs</ion-card-subtitle>
+          </ion-card-header>
+          <h1 class="ion-text-right">
+            <ng-container
+              *ngIf="appGlobal.usersByRoles.teachers; else noStudent"
+            >
+              {{appGlobal.usersByRoles.teachers?.length}}
+              <ion-fab
+                vertical="bottom"
+                horizontal="end"
+                slot="fixed"
+                edge="true"
+                [routerLink]="['/app/all-teachers']"
+              >
+                <ion-fab-button color="teal" size="small">
+                  <ion-icon name="caret-forward-outline"></ion-icon>
+                </ion-fab-button>
+              </ion-fab>
+            </ng-container>
+            <ng-template #noStudent> 0 </ng-template>
+          </h1>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" sizeSm="6" sizeMd="6" sizeLg="3">
+        <ion-card
+          class="ion-padding ion-no-margin"
+          color="lightgrey"
+          mode="ios"
+        >
+          <ion-card-header mode="ios">
+            <ion-card-subtitle>Leçons</ion-card-subtitle>
+          </ion-card-header>
+          <h1 class="ion-text-right">
+            <ng-container
+              *ngIf="appGlobal.usersByRoles.teachers; else noStudent"
+            >
+              {{appGlobal.lessons?.length}}
+              <ion-fab
+                vertical="bottom"
+                horizontal="end"
+                slot="fixed"
+                edge="true"
+                [routerLink]="['/app/all-teachers']"
+              >
+                <ion-fab-button color="teal" size="small">
+                  <ion-icon name="caret-forward-outline"></ion-icon>
+                </ion-fab-button>
+              </ion-fab>
+            </ng-container>
+            <ng-template #noStudent> 0 </ng-template>
+          </h1>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" sizeSm="6" sizeMd="6" sizeLg="3">
+        <ion-card
+          class="ion-padding ion-no-margin"
+          color="lightgrey"
+          mode="ios"
+        >
+          <ion-card-header mode="ios">
+            <ion-card-subtitle>Quiz</ion-card-subtitle>
+          </ion-card-header>
+          <h1 class="ion-text-right">
+            <ng-container *ngIf="appGlobal.lessons; else noStudent">
+              {{quiz}}
+              <ion-fab
+                vertical="bottom"
+                horizontal="end"
+                slot="fixed"
+                edge="true"
+                [routerLink]="['/app/all-teachers']"
+              >
+                <ion-fab-button color="teal" size="small">
+                  <ion-icon name="caret-forward-outline"></ion-icon>
+                </ion-fab-button>
+              </ion-fab>
+            </ng-container>
+            <ng-template #noStudent> 0 </ng-template>
+          </h1>
+        </ion-card>
+      </ion-col>
+      <ion-col size="12" sizeSm="6" sizeMd="6" sizeLg="3">
+        <!-- <ion-card class="ion-padding" color="lightgrey" mode="ios">
+          <ion-card-header>
+            <ion-card-subtitle>Professeurs</ion-card-subtitle>
+          </ion-card-header>
+          <h1 class="ion-text-right">
+            <ng-container
+              *ngIf="appGlobal.usersByRoles.teachers; else noStudent"
+            >
+              {{appGlobal.usersByRoles.teachers?.length}}
+            </ng-container>
+            <ng-template #noStudent> 0 </ng-template>
+          </h1>
+        </ion-card> -->
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>

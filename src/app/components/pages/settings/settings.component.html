@@ -1,0 +1,519 @@
+<!-- eslint-disable @angular-eslint/template/eqeqeq -->
+<ion-content [fullscreen]="true">
+  <p>settings works!</p>
+  <ng-container *ngIf="appGlobal.user?.role === 'super_admin'">
+    <h2>Super Admin</h2>
+
+    <ion-accordion-group color="transparent" expand="compact" value="matieres">
+      <!--  -->
+
+      <ion-accordion value="matieres" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Gestion des Matières et autres</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-grid fixed>
+            <ion-row>
+              <ion-col size="12">
+                <!-- <ion-label>Pizza</ion-label> -->
+                <ion-select
+                  [(ngModel)]="appContent.slug"
+                  value=""
+                  color="teal"
+                  mode="ios"
+                  interface="popover"
+                  placeholder="Que voulez-vous ajouter"
+                  (ionChange)="matiereCourse($event)"
+                >
+                  <ion-select-option value="matiere">Matière</ion-select-option>
+                  <ion-select-option value="course">Cours</ion-select-option>
+                </ion-select>
+              </ion-col>
+            </ion-row>
+            <ion-row *ngIf="appContent.slug">
+              <ion-col size="7">
+                <ion-card
+                  mode="md"
+                  class="radius-10 ion-no-margin"
+                  color="white"
+                >
+                  <ion-card-header>
+                    <ion-card-title
+                      >Nouve{{ appContent.slug === "matiere" ? "lle" : "au" }}
+                      {{ appContent.label }}
+                    </ion-card-title>
+                    <ion-card-subtitle
+                      >Remplir tous les champs ci-dessous</ion-card-subtitle
+                    >
+                  </ion-card-header>
+                  <ion-card-content>
+                    <ng-container *ngIf="appContent.slug === 'matiere'">
+                      <ion-item color="transparent">
+                        <ion-label>Niveau</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newMatiere.niveau"
+                          (ionChange)="
+                            filterIng(
+                              appContent.slug,
+                              'niveau',
+                              newMatiere.niveau,
+                              $event
+                            )
+                          "
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                          placeholder="Selectionner Niveau"
+                        >
+                          <ion-select-option
+                            *ngFor="let level of appGlobal.niveaux"
+                            [value]="level.classe_slug"
+                          >
+                            {{ level.name }}
+                          </ion-select-option>
+                        </ion-select>
+                      </ion-item>
+
+                      <ion-item color="transparent" *ngIf="newMatiere.niveau">
+                        <ion-label>Classe</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newMatiere.classe"
+                          placeholder="Selectionner Niveau"
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                        >
+                          <ng-container *ngIf="!newMatiereSelects.classe">
+                            <ion-select-option value=""
+                              >Aucune Classe</ion-select-option
+                            >
+                          </ng-container>
+                          <ng-container *ngIf="newMatiereSelects.classe">
+                            <ion-select-option
+                              *ngFor="let c of newMatiereSelects.classe"
+                              [value]="c.name_slug"
+                            >
+                              {{ c.name }}</ion-select-option
+                            >
+                          </ng-container>
+                        </ion-select>
+                      </ion-item>
+
+                      <ng-container *ngIf="newMatiere.classe">
+                        <ion-item
+                          color="transparent"
+                          *ngIf="newMatiereSelects.niveau == 'Humanité'"
+                        >
+                          <ion-label>Section</ion-label>
+                          <ion-select
+                            value=""
+                            [(ngModel)]="newMatiere.section"
+                            placeholder="Selectionner Section"
+                            color="teal"
+                            mode="ios"
+                            interface="popover"
+                          >
+                            <ion-select-option value="peperoni"
+                              >Peperoni</ion-select-option
+                            >
+                            <ion-select-option value="hawaii"
+                              >Hawaii</ion-select-option
+                            >
+                          </ion-select>
+                        </ion-item>
+                      </ng-container>
+
+                      <ion-item color="transparent" *ngIf="newMatiere.section">
+                        <ion-label>Option</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newMatiere.option"
+                          placeholder="Selectionner Option"
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                        >
+                          <ion-select-option value="peperoni"
+                            >Peperoni</ion-select-option
+                          >
+                          <ion-select-option value="hawaii"
+                            >Hawaii</ion-select-option
+                          >
+                        </ion-select>
+                      </ion-item>
+
+                      <ion-item color="transparent">
+                        <ion-label position="floating">Nom</ion-label>
+                        <ion-input
+                          type="text"
+                          [(ngModel)]="newMatiere.name"
+                        ></ion-input>
+                      </ion-item>
+                    </ng-container>
+
+                    <ng-container *ngIf="appContent.slug === 'course'">
+                      <ion-item color="transparent">
+                        <ion-label>Niveau</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newCourse.niveau"
+                          (ionChange)="
+                            filterIng(
+                              appContent.slug,
+                              'niveau',
+                              newCourse.niveau,
+                              $event
+                            )
+                          "
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                          placeholder="Selectionner Niveau"
+                        >
+                          <ion-select-option
+                            *ngFor="let level of appGlobal.niveaux"
+                            [value]="level.classe_slug"
+                          >
+                            {{ level.name }}
+                          </ion-select-option>
+                        </ion-select>
+                      </ion-item>
+
+                      <ion-item color="transparent" *ngIf="newCourse.niveau">
+                        <ion-label>Classe</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newCourse.classe"
+                          placeholder="Selectionner Classe"
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                          (ionChange)="
+                            filterIng(
+                              appContent.slug,
+                              'classe',
+                              newCourse.classe,
+                              $event
+                            )
+                          "
+                        >
+                          <ng-container *ngIf="!newCourseSelects.classe">
+                            <ion-select-option value=""
+                              >Aucune Classe</ion-select-option
+                            >
+                          </ng-container>
+                          <ng-container *ngIf="newCourseSelects.classe">
+                            <ion-select-option
+                              *ngFor="let c of newCourseSelects.classe"
+                              [value]="c.name_slug"
+                            >
+                              {{ c.name }}</ion-select-option
+                            >
+                          </ng-container>
+                        </ion-select>
+                      </ion-item>
+
+                      <ng-container *ngIf="newCourse.classe">
+                        <ion-item
+                          color="transparent"
+                          *ngIf="newCourseSelects.niveau == 'Humanité'"
+                        >
+                          <ion-label>Section</ion-label>
+                          <ion-select
+                            value=""
+                            [(ngModel)]="newCourse.section"
+                            placeholder="Selectionner Section"
+                            color="teal"
+                            mode="ios"
+                            interface="popover"
+                          >
+                            <ion-select-option value="peperoni"
+                              >Peperoni</ion-select-option
+                            >
+                            <ion-select-option value="hawaii"
+                              >Hawaii</ion-select-option
+                            >
+                          </ion-select>
+                        </ion-item>
+                      </ng-container>
+
+                      <ion-item color="transparent" *ngIf="newCourse.section">
+                        <ion-label>Option</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newCourse.option"
+                          placeholder="Selectionner Option"
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                        >
+                          <ion-select-option value="peperoni"
+                            >Peperoni</ion-select-option
+                          >
+                          <ion-select-option value="hawaii"
+                            >Hawaii</ion-select-option
+                          >
+                        </ion-select>
+                      </ion-item>
+
+                      <ion-item color="transparent" *ngIf="newCourse.classe">
+                        <ion-label>Matière attachée</ion-label>
+                        <ion-select
+                          value=""
+                          [(ngModel)]="newCourse.matiere"
+                          placeholder="Selectionner Option"
+                          color="teal"
+                          mode="ios"
+                          interface="popover"
+                        >
+                          <ion-select-option
+                            *ngFor="let m of this.newCourseSelects.matiere"
+                            [value]="m.slug"
+                          >
+                            {{ m.name }}
+                          </ion-select-option>
+                        </ion-select>
+                      </ion-item>
+
+                      <ion-item color="transparent" *ngIf="newCourse.matiere">
+                        <ion-label position="floating">Nom</ion-label>
+                        <ion-input
+                          type="text"
+                          [disabled]="!newCourse.matiere"
+                          [(ngModel)]="newCourse.name"
+                        ></ion-input>
+                      </ion-item>
+                    </ng-container>
+                  </ion-card-content>
+                  <br />
+                  <ng-container *ngIf="appContent.slug == 'matiere'">
+                    <ion-button
+                      (click)="insertCourseMatiere($event)"
+                      expand="block"
+                      fill="solid"
+                      mode="ios"
+                      size="small"
+                      color="teal"
+                      class="radius-5"
+                      style="margin: 5px"
+                      [disabled]="
+                        !newMatiere.name ||
+                        !newMatiere.classe ||
+                        !newMatiere.niveau
+                      "
+                    >
+                      Insérer
+                    </ion-button>
+                  </ng-container>
+                  <ng-container *ngIf="appContent.slug == 'course'">
+                    <ion-button
+                      (click)="insertCourseMatiere($event)"
+                      expand="block"
+                      fill="solid"
+                      mode="ios"
+                      size="small"
+                      color="teal"
+                      class="radius-5"
+                      style="margin: 5px"
+                      [disabled]="
+                        !newCourse.name ||
+                        !newCourse.classe ||
+                        !newCourse.niveau
+                      "
+                    >
+                      Insérer
+                    </ion-button>
+                  </ng-container>
+                </ion-card>
+              </ion-col>
+              <ion-col size="5">
+                <ng-container
+                  *ngIf="this.newMatiereSelects.classe && newMatiere.classe"
+                >
+                  <ion-card
+                    mode="md"
+                    class="radius-10 ion-no-margin"
+                    color="silversand"
+                  >
+                    <ion-card-header color="silversand">
+                      <ion-card-title>Table des Matières</ion-card-title>
+                    </ion-card-header>
+                    <ng-container
+                      *ngIf="newCourseSelects?.matiere; else noSubjects"
+                    >
+                      <ng-container
+                        *ngFor="let mat of newCourseSelects.matiere"
+                      >
+                        <ion-item-divider color="metal">
+                          <ion-label>
+                            {{ mat.name }}
+                          </ion-label>
+                        </ion-item-divider>
+                        <ion-item color="white" *ngFor="let c of mat.courses">
+                          <ion-label> {{ c.name }} </ion-label>
+                        </ion-item>
+                      </ng-container>
+                    </ng-container>
+                    <ng-template #noSubjects>
+                      <i>Aucune Matière inscrite pour cette classe</i>
+                    </ng-template>
+                  </ion-card></ng-container
+                >
+                <ng-container
+                  *ngIf="this.newCourseSelects.matiere && newCourse.classe"
+                >
+                  <ion-card
+                    mode="md"
+                    class="radius-10 ion-no-margin"
+                    color="silversand"
+                  >
+                    <ion-card-header color="silversand">
+                      <ion-card-title>Table des Matières</ion-card-title>
+                    </ion-card-header>
+                    <ng-container
+                      *ngIf="newCourseSelects?.matiere; else noSubjects"
+                    >
+                      <ng-container
+                        *ngFor="let mat of newCourseSelects.matiere"
+                      >
+                        <ion-item-divider color="metal">
+                          <ion-label>
+                            {{ mat.name }}
+                          </ion-label>
+                        </ion-item-divider>
+                        <ion-item color="white" *ngFor="let c of mat.courses">
+                          <ion-label> {{ c.name }} </ion-label>
+                        </ion-item>
+                      </ng-container>
+                    </ng-container>
+                    <ng-template #noSubjects>
+                      <i>Aucune Matière inscrite pour cette classe</i>
+                    </ng-template>
+                  </ion-card>
+                </ng-container>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </div>
+      </ion-accordion>
+
+      <ion-accordion value="first" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Gestion des Niveaux & sections</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="4">
+              <caption>
+                Niveaux
+              </caption>
+              <ion-card color="transparent">
+                <ul>
+                  <li></li>
+                </ul>
+              </ion-card>
+            </ion-col>
+            <ion-col size="8"></ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
+
+      <ion-accordion value="second" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Gestion des classes</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">Second Content</div>
+      </ion-accordion>
+
+      <ion-accordion value="third" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Gestion des écoles</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="7">
+              <h5>Toutes les écoles</h5>
+              <ion-searchbar
+                placeholder="Filter schools"
+                (ionInput)="onSearchChange($event)"
+                [debounce]="250"
+                showCancelButton="never"
+                mode="ios"
+                color="lightgrey"
+              >
+              </ion-searchbar>
+
+              <ion-card class="radius-10 ion-padding">
+                <!-- If searching, display filtered list -->
+                <ng-container
+                  *ngIf="
+                    isSearching && filteredSchools.length > 0;
+                    else noResults
+                  "
+                >
+                  <div *ngFor="let item of filteredSchools">
+                    {{ item.name }}
+                    <!-- Assuming each school object has a 'name' property -->
+                  </div>
+                </ng-container>
+
+                <!-- If not searching, display full list -->
+                <ng-container *ngIf="!isSearching">
+                  <ng-container *ngIf="appGlobal.schools">
+                    <div *ngFor="let item of appGlobal?.schools">
+                      {{ item.name }}
+                    </div>
+                  </ng-container>
+                </ng-container>
+
+                <!-- Show no results message if search yields no results -->
+                <ng-template #noResults>
+                  <p>No results found</p>
+                </ng-template>
+              </ion-card>
+            </ion-col>
+            <ion-col size="5">
+              <h5>Créer une école</h5>
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-item lines="none" color="transparent">
+                  <!-- <ion-label>Nom</ion-label> -->
+                  <ion-input placeholder="Nom"></ion-input>
+                </ion-item>
+
+                <ion-item lines="none" color="transparent">
+                  <!-- <ion-label>Adresse</ion-label> -->
+                  <ion-input placeholder="Adresse"></ion-input>
+                </ion-item>
+
+                <ion-item lines="none" color="transparent">
+                  <!-- <ion-label>Province</ion-label> -->
+                  <ion-input placeholder="Province"></ion-input>
+                </ion-item>
+
+                <ion-item lines="none" color="transparent">
+                  <!-- <ion-label>Secteur</ion-label> -->
+                  <ion-input placeholder="Secteur"></ion-input>
+                </ion-item>
+                <br />
+                <ion-button
+                  color="teal"
+                  mode="ios"
+                  size="small"
+                  expand="block"
+                  fill="solid"
+                  expand="block"
+                  class="ion-margin-horizontal"
+                >
+                  Ajouter
+                </ion-button>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
+      <!--  -->
+    </ion-accordion-group>
+  </ng-container>
+</ion-content>

@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 130f8dfb14f500147a55380582801f7e
+timeCreated: 1596469429
+licenseType: Pro
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Etelka
+  fontNames:
+  - Etelka
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 0c5212e15c2f8d345b4b2c970ef079e8, type: 3}
+  - {fileID: 12800000, guid: 0750b31e81a60c3409c3892dfa935138, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

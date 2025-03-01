@@ -1,0 +1,88 @@
+ion-split-pane {
+  --border: 0px solid;
+  // --side-max-width: 100px
+  // --side-min-width: 100px
+  --side-width: 20px;
+
+  // margin-top: 45px;
+  // margin-bottom: -45px;
+  // padding-bottom: 60px;
+
+  ion-content {
+    --background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.4)),
+      url(../../assets/textures/17213260_rm373batch13-085-1000.jpg) no-repeat
+        left center;
+    background-size: cover;
+    --color: var(--ion-color-white);
+
+    ion-item {
+      --background: rgba(var(--ion-color-teal-rgb), 0.7);
+      // --background: transparent;
+      // --background-activated: #3880ff;
+      // --background-activated-opacity: 1;
+      //--background-focused: rgba(var(--ion-color-green-rgb), 1);
+      // --background-focused-opacity: 1;
+      //--background-hover: rgba(var(--ion-color-teal-rgb), 1);
+      // --background-hover-opacity: 1;
+      --border-color: #d6d6d6;
+      --border-radius: 15px;
+      --border-style: solid;
+      --border-width: 2px;
+      --color: #ffffff;
+      // --color-activated: #3880ff;
+      // --color-focused: #3880ff;
+      // --color-hover: #3880ff;
+      --detail-icon-color: var(--ion-color-white);
+      --detail-icon-font-size: 16px;
+      --detail-icon-opacity: 1;
+      // --highlight-color-focused: #0cd1e8;
+      // --highlight-color-invalid: #f04141;
+      // --highlight-color-valid: #10dc60;
+      // --highlight-height: 32px;
+      // --inner-border-width: 8px;
+      // --inner-box-shadow: 4px 4px;
+      // --inner-padding-bottom: 4px;
+      // --inner-padding-end: 4px;
+      // --inner-padding-start: 4px;
+      // --inner-padding-top: 4px;
+      --min-height: 20px;
+      // --padding-bottom: 4px;
+      // --padding-end: 4px;
+      // --padding-start: 4px;
+      // --padding-top: 4px;
+      // --ripple-color: #1e1e1e;
+      // --transition: background-color 15ms linear;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+    & .custom-active-class {
+      --background: var(--ion-color-white);
+      --color: var(--ion-color-teal);
+      --border-color: var(--ion-color-teal);
+      // --border-color: #d6d6d6;
+      --detail-icon-color: var(--ion-color-teal);
+    }
+  }
+}
+ion-content#mecm-menu {
+  --offset-bottom: 40px !important;
+  --offset-top: 40px !important;
+  --padding-bottom: 60px;
+  --padding-end: 20px;
+  --padding-start: 20px;
+  --padding-top: 60px;
+}
+
+ion-split-pane {
+  transition: all 0.3s ease;
+}
+
+ion-split-pane[when="false"] {
+  display: none;
+}
+
+ion-spinner {
+  --color: var(--ion-color-teal);
+  height: 50px;
+  width: 50px;
+}

@@ -1,0 +1,1218 @@
+import { Injectable, OnDestroy } from '@angular/core';
+import {
+  AuthChangeEvent,
+  AuthSession,
+  createClient,
+  Session,
+  SupabaseClient,
+  User,
+} from '@supabase/supabase-js';
+import { environment } from 'src/environments/environment';
+import { AppGlobalService } from './app-global.service';
+import { Router } from '@angular/router';
+import { ToastController } from '@ionic/angular';
+import { GlobalFunctionsService } from './global-functions.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class SupabaseService implements OnDestroy {
+  private supabase!: SupabaseClient;
+  supabase_url = environment.SUPABASE_URL;
+  supabase_key = environment.SUPABASE_KEY;
+
+  currentRole = '';
+
+  _session: AuthSession | null = null;
+
+  // TABLES
+  USERS_DB = 'Users';
+  STUDENTS_DB = 'Students';
+  MATIERE_DB = 'Matiere';
+  // MATIERE_DB = 'Matiere';
+  COURSES_DB = 'courses';
+  CLASSES_DB = 'Classes';
+  QUIZ_DB = 'Quiz';
+  LESSONS_DB = 'lessons';
+
+  subscriptions: any;
+
+  // TABLES
+
+  constructor(
+    private toastController: ToastController,
+    public appGlobal: AppGlobalService,
+    private gf: GlobalFunctionsService,
+    private router: Router
+  ) {
+    this.supabase = createClient(
+      this.supabase_url, // Supabase URL
+      this.supabase_key // Supabase Public Anon Key
+    );
+    this.addMatiere();
+  }
+
+  get session() {
+    // this.supabase.auth.getSession().then(({ data }) => {
+    //   this._session = data.session;
+    // });
+    // return this._session;
+
+    if (!this._session) {
+      const savedSession = localStorage.getItem('session');
+      this._session = savedSession ? JSON.parse(savedSession) : null;
+    }
+    return this._session;
+  }
+
+  getSession(): Session | null {
+    const sessionStr = localStorage.getItem('supabaseSession');
+    if (sessionStr) {
+      // console.log(this.appGlobal.user);
+    }
+    return sessionStr ? JSON.parse(sessionStr) : null;
+  }
+
+  authChanges(
+    callback: (event: AuthChangeEvent, session: Session | null) => void
+  ) {
+    return this.supabase.auth.onAuthStateChange((event, session) => {
+      callback(event, session);
+      if (event === 'SIGNED_IN' && session) {
+        // console.log('User is signed in');
+        const userId = session.user.id;
+        const user = session.user;
+        // // console.log(user);
+        this.profile(user);
+        this.listenChanges();
+      }
+    });
+  }
+
+  // AUTHENTICATION AREA
+
+  async signIn(email: string, password: string) {
+    // OLD CODE
+    // return this.supabase.auth.signInWithPassword({ email, password });
+
+    // NEW CODE
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (data.session) {
+      this._session = data.session; // Save session
+      localStorage.setItem('supabaseSession', JSON.stringify(data.session)); // Optional: Persist session
+    }
+    return { data, error };
+  }
+
+  signOut() {
+    //
+    localStorage.removeItem('supabaseSession');
+    return this.supabase.auth.signOut();
+  }
+  // AUTHENTICATION AREA
+
+  // GET PROFILE
+
+  profile(user: User) {
+    // // console.log(user);
+    return this.supabase
+      .from(this.USERS_DB)
+      .select(`*`)
+      .eq('user_id', user.id)
+      .single()
+      .then((result) => {
+        console.log(result.data);
+        this.appGlobal.user = result.data;
+        this.currentRole = result.data.role;
+        setTimeout(() => {
+          this.initQueries();
+        }, 500);
+        return this.appGlobal;
+      });
+  }
+  // c5135af3-092c-4626-ace5-c8f60f7d288b
+  // GET PROFILE
+
+  // INIT QUERIES
+  async initQueries() {
+    this.getRoles();
+    this.getSubjects();
+    setTimeout(() => {
+      this.getClasses();
+      // console.log(this.appGlobal.user);
+      if (
+        this.appGlobal.user.role == 'super_admin' ||
+        this.appGlobal.user.role == 'admin' ||
+        this.appGlobal.user.role == 'teacher'
+      ) {
+        this.getChat();
+        this.getLessons();
+      }
+      return this.appGlobal;
+    }, 1300);
+    console.log(this.appGlobal);
+    return this.appGlobal;
+  }
+  // INIT QUERIES
+  // QUERIES
+  async getUsersByRoles(roles: string) {
+    if (roles != 'student') {
+      return await this.supabase
+        .from(this.USERS_DB)
+        .select('*')
+        .eq('role', roles)
+        .then((res: any) => {
+          //this.appGlobal.usersByRoles.admins = res.data;
+          // console.log('Role ', roles, ' : ', res);
+        });
+    }
+  }
+  async insertMatiere() {
+    const { data, error } = await this.supabase
+      .from(this.MATIERE_DB)
+      // .insert()
+      .select();
+  }
+
+  async getLessons() {
+    return (
+      this.supabase
+        .from('lessons')
+        .select(`*, Quiz(*), courses(*, Matiere(*)), teacher(*)`)
+        // .select(`*, Quiz(*), Matiere (*, courses(*))`)
+        .then((result) => {
+          // // console.log('Getting Classes');
+          if (result.data) {
+            // console.log(result.data);
+            this.appGlobal.lessons = result.data;
+            // return this.appGlobal;
+
+            if (this.appGlobal.user?.role == 'teacher') {
+              let totalQuizLength = 0;
+              this.appGlobal.user?.lessons?.forEach((element: any) => {
+                // console.log('index: ', element);
+                totalQuizLength += element.Quiz.length;
+              });
+              this.appGlobal.totalQuizLength = totalQuizLength;
+            }
+          } else {
+            console.warn('getLessons -> ', result);
+          }
+        }),
+      this.appGlobal.totalQuizLength
+    );
+  }
+
+  async getRoles() {
+    return this.supabase
+      .from(this.USERS_DB)
+      .select(`*`)
+      .then((result) => {
+        let selectQuery = `*`; // Default select query
+
+        switch (this.currentRole) {
+          case 'super_admin':
+            // Filter out the roles relevant to super_admin
+            const superAdminRoles = [
+              'super_admin',
+              'admin',
+              'inspector',
+              'teacher',
+              'parent',
+              'student',
+            ];
+
+            // Perform additional queries for each role if needed
+            if (superAdminRoles) {
+              superAdminRoles.forEach(async (item: any) => {
+                // // console.log(item);
+                switch (item) {
+                  case 'super_admin':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for super_admin
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'super_admin')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.super_admins = res.data;
+                      });
+                    break;
+
+                  case 'admin':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for admin
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'admin')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.admins = res.data;
+                      });
+                    break;
+
+                  case 'inspector':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for inspector
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'inspector')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.inspectors = res.data;
+                      });
+                    break;
+
+                  case 'teacher':
+                    selectQuery = `*, teachers_classes(*, Classes(*))`; // Default select query
+
+                    // Additional query or processing for teacher
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then((res: any) => {
+                        // // console.log('teacher', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+                      });
+                    break;
+
+                  case 'parent':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for parent
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'parent')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.parents = res.data;
+                      });
+                    break;
+
+                  case 'student':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for student
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
+                    break;
+                }
+              });
+            }
+            break;
+
+          case 'admin':
+            // Similar filtering and querying logic for admin
+            const adminRoles = [
+              'admin',
+              'inspector',
+              'teacher',
+              'parent',
+              'student',
+            ];
+
+            if (adminRoles) {
+              adminRoles.forEach(async (item: any) => {
+                // // console.log(item);
+                switch (item) {
+                  case 'admin':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for admin
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'admin')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.admins = res.data;
+                      });
+                    break;
+
+                  case 'inspector':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for inspector
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'inspector')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.inspectors = res.data;
+                      });
+                    break;
+
+                  case 'teacher':
+                    selectQuery = `*, teachers_classes(*, Classes(*)`; // Default select query
+
+                    // Additional query or processing for teacher
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then((res: any) => {
+                        // // console.log('teacher', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+                      });
+                    break;
+
+                  case 'parent':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for parent
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'parent')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.parents = res.data;
+                      });
+                    break;
+
+                  case 'student':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for student
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
+                    break;
+                }
+              });
+            }
+            break;
+
+          case 'inspector':
+            // Similar filtering and querying logic for admin
+            const inspectorRoles = ['inspector', 'teacher', 'student'];
+
+            if (inspectorRoles) {
+              inspectorRoles.forEach(async (item: any) => {
+                // // console.log(item);
+                switch (item) {
+                  case 'inspector':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for inspector
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'inspector')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.inspectors = res.data;
+                      });
+                    break;
+
+                  case 'teacher':
+                    selectQuery = `* `; // Default select query
+
+                    // Additional query or processing for teacher
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then((res: any) => {
+                        // // console.log('teacher', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+                      });
+                    break;
+
+                  case 'student':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for student
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
+                    break;
+                }
+              });
+            }
+            break;
+
+          case 'teacher':
+            // Similar filtering and querying logic for admin
+            const teacherRoles = ['teacher', 'student'];
+
+            if (teacherRoles) {
+              teacherRoles.forEach(async (item: any) => {
+                // // console.log(item);
+                switch (item) {
+                  case 'teacher':
+                    // console.log('Getting courses');
+                    selectQuery = `* `; // Default select query
+                    const selectQuery2 = `*, teachers_classes(*, Classes(*, Students(*) )), lessons(*, courses(*, Matiere(*) ), Quiz(*))`; // Default select query
+
+                    // Additional query or processing for teacher
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then(async (res: any) => {
+                        // console.log('teacher 23', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+
+                        await this.supabase
+                          .from(this.USERS_DB)
+                          .select(selectQuery2)
+                          .eq('id', this.appGlobal.user.id)
+                          .then((res2: any) => {
+                            // // console.log('Teacher Results : ', res2);
+
+                            if (res2) {
+                              // console.log('Teacher: ', res2.data);
+                              this.appGlobal.user = res2.data[0];
+                            } else {
+                              console.log('Teacher: Aucune reponse ');
+                            }
+                            return this.appGlobal.user;
+                          });
+                      });
+
+                    break;
+
+                  case 'student':
+                    selectQuery = `*, Classes(*)`; // Default select query
+
+                    // Additional query or processing for student
+                    await this.supabase
+                      .from(this.STUDENTS_DB)
+                      .select(selectQuery)
+                      // .eq('classe', this.appGlobal.user.id)
+                      .then((res2: any) => {
+                        // // console.log('Role: Student -> ', res2.data);
+                        // console.log(this.appGlobal.user.teachers_classes);
+                        // let students_in_class
+                        // this.appGlobal.user.teachers_classes.forEach(
+                        //   (classe: any) => {
+
+                        //   }
+                        // );
+                        this.appGlobal.usersByRoles.students = res2.data;
+                      });
+                    break;
+                }
+              });
+            }
+            break;
+
+          case 'parents':
+            // Similar filtering and querying logic for admin
+            const parentRoles = ['student'];
+
+            if (parentRoles) {
+              parentRoles.forEach(async (item: any) => {
+                // console.log(item);
+                switch (item) {
+                  case 'student':
+                    selectQuery = `*`; // Default select query
+
+                    // Additional query or processing for student
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
+                    break;
+                }
+              });
+            }
+            break;
+
+          /*
+          default:
+            // Handling for other roles
+            const defaultRoles = result.data?.filter((item: any) => {
+              return ['inspector', 'teacher', 'parent', 'student'].includes(
+                item.role
+              );
+            });
+
+            if (defaultRoles) {
+              defaultRoles.forEach(async (item: any) => {
+                // Handle each role similar to the super_admin case
+              });
+            }
+            break;
+            */
+        }
+
+        return this.appGlobal;
+      });
+  }
+
+  async getSubjects() {
+    return (
+      this.supabase
+        .from(this.MATIERE_DB)
+        .select(`*, courses(*)`)
+        // .eq('user_id', user.id)
+        // .single()
+        .then((result) => {
+          // console.log(result.data);
+          this.appGlobal.matiere = result.data;
+          return this.appGlobal.matiere;
+        })
+        .then(() => {
+          return this.supabase
+            .from('levels')
+            .select(`*, Classes(*), Matiere(*))`)
+            .then((result2) => {
+              // console.log('Getting Levels', result2);
+              if (result2.data) {
+                // console.log(result.data);
+                this.appGlobal.niveaux = result2.data;
+                return this.appGlobal;
+              } else {
+                return console.warn('getLevels -> ', result2);
+              }
+            });
+        })
+    );
+  }
+
+  async getClasses() {
+    return this.supabase
+      .from(this.CLASSES_DB)
+      .select(`*, Matiere (*, courses(*, lessons(*, Quiz(*))))`)
+      .then((result) => {
+        // console.log('Getting Classes');
+        if (result.data) {
+          // console.log(result.data);
+          this.appGlobal.classes = result.data;
+          // return this.appGlobal;
+        } else {
+          console.warn('getClasses -> ', result);
+        }
+      });
+  }
+
+  async getChat() {
+    return (
+      this.supabase
+        .from('chatlog')
+        .select(`*, chatMessages(*)`)
+        // .eq('user_id', this.appGlobal.user.id)
+        .match({ teacher: this.appGlobal.user.id })
+
+        // .single()
+        .then((result) => {
+          // console.log('chatlog', result);
+          this.appGlobal.chatlog = result.data;
+          this.checkMessages(result.data);
+          // this.appGlobal.chatlog.forEach((chatlog: any) => {
+          //   const unreadCount = chatlog.chatMessages.filter(
+          //     (msg: any) => msg.read_status === 1
+          //   ).length;
+          //   chatlog.unread = unreadCount;
+          //   console.log(unreadCount); // Affichera 2
+          // });
+          console.log(this.appGlobal);
+          localStorage.setItem(
+            'messages',
+            JSON.stringify(this.appGlobal.chatlog)
+          );
+          // this.appGlobal.user.pop(matieres) = result.data;
+          return this.appGlobal;
+        })
+    );
+  }
+
+  async insertNewQuiz(quiz: any) {
+    // console.log(quiz);
+    // return;
+    const { data, error } = await this.supabase
+      .from(this.QUIZ_DB)
+      .insert([
+        {
+          title: quiz.title,
+          lesson: quiz.lesson,
+          questions: quiz.quiz,
+          teacher: quiz.teacher,
+          code: quiz.code,
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error inserting quiz:', error);
+      return error;
+    }
+
+    console.log('Inserted quiz:', data);
+    return { data, error };
+  }
+
+  getMessages() {}
+
+  async checkMessages(data: any) {
+    let messages;
+    // setInterval(() => {
+    if (data) {
+      const localMessages = localStorage.getItem('messages');
+      if (localMessages) {
+        messages = JSON.parse(localMessages);
+        if (data.length > 0) {
+          let messages = {
+            unread: 0,
+            read: 0,
+          };
+          // console.log('Messages', this.appGlobal?.chatlog);
+          data.forEach((chatlog: any) => {
+            const unreadCount = chatlog.chatMessages.filter(
+              (msg: any) => msg.read_status === 1
+            ).length;
+            // const readCount = chatlog.chatMessages.filter(
+            //   (msg: any) => msg.read_status === 0
+            // ).length;
+            const readCount = chatlog.chatMessages.length;
+
+            messages.unread += unreadCount;
+            messages.read += readCount;
+
+            // console.log(unreadCount); // Affichera 2
+          });
+          this.appGlobal.chatlog.read = messages.read;
+          this.appGlobal.chatlog.unread = messages.unread;
+          console.log(this.appGlobal.chatlog);
+
+          /*
+            if (this.appGlobal.chatlog?.chatMessages) {
+              console.log('chatMessages!');
+              if (
+                messages[0].chatMessages.length !=
+                this.appGlobal.chatlog?.chatMessages.length
+              ) {
+                console.log('Nouveaux Messages !');
+                // localStorage.setItem(
+                //   'messages',
+                //   JSON.stringify(this.appGlobal.chatlog)
+                // );
+                return this.appGlobal.chatlog;
+              }
+            }*/
+          return this.appGlobal.chatlog;
+        }
+        return;
+      }
+    }
+    return this.appGlobal.chatlog;
+    // }, 2500);
+  }
+
+  // async insertNewQuiz__(quiz: any) {
+  //   // return console.log(quiz);
+  //   const { data, error } = await this.supabase
+  //     .from(this.QUIZ_DB)
+  //     .insert([
+  //       { title: quiz.title },
+  //       { questions: quiz.quiz },
+  //       { teacher: quiz.teacher },
+  //       { code: quiz.code },
+  //       { lesson: quiz.lesson },
+  //     ])
+  //     .select();
+  // }
+
+  async insertNewLesson(lesson: any) {
+    const { data, error } = await this.supabase
+      // .from('lessons')
+      .from(this.LESSONS_DB)
+      .insert([
+        {
+          titre: lesson.title,
+          course: lesson.cours,
+          teacher: this.appGlobal.user.id,
+          titre_slug: lesson.slug,
+          content: lesson.content,
+        },
+      ])
+      .select();
+
+    if (data) {
+      console.log('Result inserting new Lesson ', data);
+      const channels = this.supabase
+        .channel('custom-insert-channel')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'lessons' },
+          (payload) => {
+            console.log('Change received!', payload);
+            this.initQueries().then((res) => {
+              console.log(res);
+            });
+            // setTimeout(() => {
+            //   return this.router.navigateByUrl('/app/all-cours');
+            // }, 2000);
+          }
+        )
+        .subscribe();
+    }
+    if (error) console.log('Error insert New Lesson ', error);
+    return { data, error };
+  }
+
+  async insertNewCourse(course: any) {
+    const { data, error } = await this.supabase
+      .from('courses')
+      .insert([
+        {
+          name: course.name,
+          matiere: course.matiere,
+          slug: course.slug,
+        },
+      ])
+      .select();
+
+    if (data) {
+      // console.log('Result inserting new Lesson ', data);
+      this.presentToast(course.name + ' inséré avec succès !', 'teal');
+      /*const channels = this.supabase
+        .channel('custom-insert-channel')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'courses' },
+          (payload) => {
+            console.log('Change received!', payload);
+            this.initQueries().then((res) => {
+              console.log(res);
+            });
+            // setTimeout(() => {
+            //   return this.router.navigateByUrl('/app/all-cours');
+            // }, 2000);
+          }
+        )
+        .subscribe();
+      return data;*/
+    }
+    if (error) {
+      console.log('Error insert New Course ', error);
+      this.presentToast('Erreur insertion Cours', 'warning');
+      // return error;
+    }
+    return { data, error };
+  }
+
+  async insertNewSubject(matiere: any) {
+    const { data, error } = await this.supabase
+      .from(this.MATIERE_DB)
+      .insert([
+        {
+          name: matiere.name,
+          niveau: matiere.niveau,
+          classe: matiere.classe,
+          section: matiere.section,
+          option: matiere.option,
+          slug: matiere.slug,
+        },
+      ])
+      .select();
+
+    if (data) {
+      // console.log('Result inserting new Lesson ', data);
+      this.presentToast(matiere.name + ' inséré avec succès !', 'teal');
+      const channels = this.supabase
+        .channel('custom-insert-channel')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: this.MATIERE_DB },
+          (payload) => {
+            console.log('Change received !', payload);
+            this.initQueries().then((res) => {
+              console.log(res);
+            });
+            // setTimeout(() => {
+            //   return this.router.navigateByUrl('/app/all-cours');
+            // }, 2000);
+          }
+        )
+        .subscribe();
+    }
+    if (error) {
+      console.log('Error insert New Subject ', error);
+      this.presentToast('Erreur insertion Matière', 'warning');
+    }
+    return { data, error };
+  }
+
+  // QUERIES
+
+  // CHANGES
+  _listenChanges() {
+    console.log('Channels are open !');
+    // Subscribe to users table changes
+    const usersChannel = this.supabase
+      .channel('custom-users-channel') // unique channel for users
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: this.USERS_DB },
+        (payload) => {
+          console.log('Change received on users!', payload);
+          this.initQueries();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to lessons table changes
+    const quizChannel = this.supabase
+      .channel('custom-lessons-channel') // unique channel for lessons
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: this.QUIZ_DB },
+        (payload) => {
+          console.log('Change received on quiz!', payload);
+          this.initQueries();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to lessons table changes
+    const lessonsChannel = this.supabase
+      .channel('custom-lessons-channel') // unique channel for lessons
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lessons' },
+        (payload) => {
+          console.log('Change received on lessons!', payload);
+          this.initQueries();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to courses table changes
+    const coursesChannel = this.supabase
+      .channel('custom-courses-channel') // unique channel for courses
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'courses' },
+        (payload) => {
+          console.log('Change received on courses!', payload);
+          this.initQueries();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to matieres table changes
+    const matieresChannel = this.supabase
+      .channel('custom-matieres-channel') // unique channel for matieres
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: this.MATIERE_DB },
+        (payload) => {
+          console.log('Change received on matieres!', payload);
+          this.initQueries();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to matieres table changes
+    const messageChannel = this.supabase
+      .channel('custom-matieres-channel') // unique channel for matieres
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chatlog' },
+        (payload) => {
+          console.log('Change received on matieres!', payload);
+          this.initQueries();
+        }
+      )
+      .subscribe();
+  }
+  listenChanges() {
+    console.log('Channels are open!');
+
+    // Configuration des abonnements
+    const tablesToMonitor = [
+      { table: this.USERS_DB, message: 'custom-users-channel' },
+      { table: this.QUIZ_DB, message: 'custom-quiz-channel' },
+      { table: 'lessons', message: 'custom-lessons-channel' },
+      { table: 'courses', message: 'custom-courses-channel' },
+      { table: this.MATIERE_DB, message: 'custom-matieres-channel' },
+      { table: 'chatlog', message: 'custom-chatlog-channel' },
+      { table: 'chatMessages', message: 'custom-chatmessages-channel' },
+    ];
+
+    // Crée des abonnements dynamiquement
+    this.subscriptions = tablesToMonitor.map(({ table, message }) =>
+      this.supabase
+        .channel('custom-all-channel')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table },
+          (payload) => {
+            console.log(`Change received on table ${table}!`, payload);
+            // this.initQueries(); // Méthode d'actualisation globale
+            const newMessage: any = payload.new;
+            if (newMessage?.reciever) {
+              console.log('Channel is messages');
+              console.log('Nouveau message reçu:', newMessage);
+              this.appGlobal.newMessage = 1;
+              if (newMessage?.reciever == this.appGlobal.user.id) {
+                const msgs = this.appGlobal.chatlog.filter((msg: any) => {
+                  return (
+                    msg.reciever == this.appGlobal.user.id &&
+                    msg.id == newMessage.id
+                  );
+                });
+                console.log('Filter msg : ' + msgs);
+                if (!msgs) {
+                  console.log('Nouveau message reçu:', newMessage);
+                  this.presentToast(
+                    `Nouveau message du Prof: " ${newMessage.message}"`,
+                    'teal'
+                  );
+                }
+                // else {
+                //   this.alertToast(`Update Message !`);
+                // }
+                /*return*/
+                this.initQueries(); // Actualise les données si nécessaire
+              }
+            }
+          }
+        )
+        .subscribe()
+    );
+
+    console.log('All subscriptions are set.');
+  }
+
+  ngOnDestroy() {
+    // Désabonnement propre lors de la destruction du composant
+    if (this.subscriptions) {
+      this.subscriptions.forEach((subscription: any) =>
+        subscription.unsubscribe()
+      );
+      console.log('All subscriptions have been unsubscribed.');
+    }
+  }
+  // CHANGES
+
+  async presentToast(message: string, color: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      color: color,
+      duration: 2000,
+    });
+    toast.present();
+  }
+
+  async addMatiere() {
+    const operationInsertion: number = 2; //0: Matiere | 1: Cours
+    const classes = [
+      {
+        id: '0-1-primaire',
+        level: 1,
+      },
+      {
+        id: '0-2-primaire',
+        level: 1,
+      },
+      {
+        id: '0-3-primaire',
+        level: 1,
+      },
+      {
+        id: '0-4-primaire',
+        level: 1,
+      },
+      {
+        id: '0-5-primaire',
+        level: 1,
+      },
+    ];
+
+    const matPerClasses = [
+      {
+        level: 1,
+        matieres: [
+          {
+            name: 'Mathématiques',
+            slug: 'mathematique',
+          },
+          {
+            name: 'Français',
+            slug: 'francais',
+          },
+          {
+            name: 'Éveils Scientifiques',
+            slug: 'eveilscientifiques',
+          },
+        ],
+      },
+    ];
+
+    const courses = [
+      {
+        name: 'Calculs',
+        slug: 'calculs',
+        level: 1,
+        matiereSlug: 'mathematique',
+      },
+      {
+        name: 'Numération',
+        slug: 'numeration',
+        level: 1,
+        matiereSlug: 'mathematique',
+      },
+      {
+        name: 'Opérations',
+        slug: 'operation',
+        level: 1,
+        matiereSlug: 'mathematique',
+      },
+      {
+        name: 'Élocution',
+        slug: 'elocution',
+        level: 1,
+        matiereSlug: 'francais',
+      },
+      {
+        name: 'Grammaire',
+        slug: 'grammaire',
+        level: 1,
+        matiereSlug: 'francais',
+      },
+      {
+        name: 'Vocabulaire',
+        slug: 'vocabulaire',
+        level: 1,
+        matiereSlug: 'francais',
+      },
+      {
+        name: 'Conjugaison',
+        slug: 'conjugaison',
+        level: 1,
+        matiereSlug: 'francais',
+      },
+      {
+        name: 'Orthographe',
+        slug: 'orthographe',
+        level: 1,
+        matiereSlug: 'francais',
+      },
+      {
+        name: 'Grandeurs',
+        slug: 'grandeurs',
+        level: 1,
+        matiereSlug: 'mathematique',
+      },
+      {
+        name: 'Education civique et morale',
+        slug: 'ecm',
+        level: 1,
+        matiereSlug: 'eveilscientifiques',
+      },
+      {
+        name: 'Education pour la santé et environnement',
+        slug: 'ese',
+        level: 1,
+        matiereSlug: 'eveilscientifiques',
+      },
+      {
+        name: 'Etude du milieu',
+        slug: 'em',
+        level: 1,
+        matiereSlug: 'eveilscientifiques',
+      },
+    ];
+
+    // METHOD MATIERE
+    if (operationInsertion === 0) {
+      classes.forEach((classe) => {
+        matPerClasses.forEach((matierePL) => {
+          if (classe.level == matierePL.level) {
+            matierePL.matieres.forEach(async (matiere) => {
+              const parts = classe.id.split('-');
+              const result = `${parts[0]}-${parts[1]}-${matiere.slug}`;
+              const out = {
+                name: matiere.name,
+                slug: result,
+                niveau: classe.level,
+                classe: classe.id,
+              };
+              // console.log(
+              //   'Classe Level: ',
+              //   classe.id,
+              //   ' -> ',
+              //   matiere.name,
+              //   ' -> ',
+              //   result
+              // );
+              console.log('Insertion result is : ', out);
+              return;
+              const { data, error } = await this.supabase
+                .from(this.MATIERE_DB)
+                .insert([out])
+                .select();
+            });
+          }
+        });
+      });
+    }
+
+    // METHOD COURSE INSERTION
+    if (operationInsertion === 1) {
+      classes.forEach((classe) => {
+        matPerClasses.forEach((matierePL) => {
+          if (classe.level == matierePL.level) {
+            matierePL.matieres.forEach(async (matiere) => {
+              courses.forEach(async (cours) => {
+                if (cours.matiereSlug == matiere.slug) {
+                  const parts = classe.id.split('-');
+                  const result = `${parts[0]}-${parts[1]}-${matiere.slug}`;
+                  const result2 = `${parts[0]}-${parts[1]}-${matiere.slug}_${cours.slug}`;
+                  const out = {
+                    name: cours.name,
+                    slug: result2,
+                    matiere: result,
+                    // classe: classe.id,
+                  };
+                  // console.log(
+                  //   'Classe Level: ',
+                  //   classe.id,
+                  //   ' -> ',
+                  //   matiere.name,
+                  //   ' -> ',
+                  //   result
+                  // );
+                  // console.log('Insertion result is : ', out);
+                  // return;
+                  const { data, error } = await this.supabase
+                    .from(this.COURSES_DB)
+                    .insert([out]);
+                  // .select();
+                  if (error) {
+                    throw error;
+                  }
+                }
+              });
+            });
+          }
+        });
+      });
+    }
+  }
+}

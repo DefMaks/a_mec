@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: fda628e6af4995b41a5f887d05bc2905
+timeCreated: 1557057669
+licenseType: Pro
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: squeaky chalk sound
+  fontNames:
+  - squeaky chalk sound
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

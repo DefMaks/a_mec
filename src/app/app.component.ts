@@ -1,4 +1,8 @@
+/* eslint-disable @angular-eslint/no-empty-lifecycle-method */
+/* eslint-disable @angular-eslint/use-lifecycle-interface */
 import { Component } from '@angular/core';
+import { AppGlobalService } from './services/app-global.service';
+import { SupabaseService } from './services/supabase.service';
 
 @Component({
   selector: 'app-root',
@@ -6,5 +10,13 @@ import { Component } from '@angular/core';
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent {
-  constructor() {}
+  session = this.supabase.session;
+  constructor(
+    public appGlobal: AppGlobalService,
+    private supabase: SupabaseService
+  ) {}
+
+  ngOnInit() {
+    this.supabase.authChanges((_, session) => (this.session = session));
+  }
 }

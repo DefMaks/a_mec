@@ -1,0 +1,136 @@
+<!-- eslint-disable @angular-eslint/template/eqeqeq -->
+<ion-content>
+  <h1>
+    <ion-label class="ion-margin-end">Tous les messages</ion-label>
+  </h1>
+  <ion-row>
+    <ion-col size="4" class="card-left">
+      <ion-card-header class="card-chattitle" mode="md">
+        <ion-card-subtitle>Chat List</ion-card-subtitle>
+      </ion-card-header>
+      <ng-container *ngIf="appGlobal?.chatlog">
+        <ng-container *ngFor="let chatlog of appGlobal?.chatlog">
+          <ion-item
+            [id]="chatlog.id"
+            [ngClass]=""
+            detail
+            [color]="selectedChat == chatlog.id ? 'teal' : ''"
+            size="small"
+            (click)="openChat(chatlog, $event)"
+          >
+            <ion-label>
+              Chat avec <br />
+              {{ chatlog?.studentData?.pseudo }} <br />
+              <!-- {{ getTheStudent(chatlog.student) }} -->
+              <small>{{ chatlog?.studentData?.Classes.name }}</small>
+              <!-- <div>
+                Leçon: <strong>{{ chatlog?.lesson }}</strong>
+              </div> -->
+            </ion-label> </ion-item
+          ><br
+        /></ng-container>
+      </ng-container>
+    </ion-col>
+    <ion-col size="8" class="card-right">
+      @if(!selectedChat){
+      <ion-card-header class="card-chattitle" mode="md">
+        <ion-card-subtitle>Chat Content</ion-card-subtitle>
+      </ion-card-header>
+      } @else {
+      <div class="card-messaging">
+        <ion-header class="ion-no-border" translucent="true">
+          <ion-toolbar>
+            <div class="ion-padding-horizontal">
+              <small
+                >Concerne la leçon "{{
+                  selectedChatData.lessonData.titre
+                }}"</small
+              >
+            </div>
+          </ion-toolbar>
+        </ion-header>
+        <section class="card-chatcontent">
+          <ng-container
+            *ngFor="
+              let message of selectedChatData.chatMessages;
+              let i;
+              as: index
+            "
+          >
+            <div
+              [class]="
+                message.sender !== this.appGlobal.user.id
+                  ? 'message-wrapper not-mines '
+                  : 'message-wrapper mines '
+              "
+            >
+              @if (message.sender != this.appGlobal.user.id &&
+              message.reciever_status == 1) {
+              <div class="message-not-read">
+                <ion-icon
+                  name="notifications-outline"
+                  style="vertical-align: -1px"
+                ></ion-icon>
+                Message non lu
+              </div>
+              }
+              <ion-card
+                [class]="
+                  message.sender !== this.appGlobal.user.id
+                    ? 'message not-mines ion-no-margin'
+                    : 'message mines ion-no-margin'
+                "
+              >
+                <div class="message-content">
+                  {{ message.message }}
+                </div>
+                <br />
+                <small>datime</small>
+              </ion-card>
+            </div>
+          </ng-container>
+          <div id="chat-bottom" #chatBottom></div>
+        </section>
+        <ion-footer class="ion-no-border" translucent="true">
+          <ion-toolbar>
+            <div>
+              <ion-row class="ion-align-items-center">
+                <ion-col size="10">
+                  <ion-textarea
+                    [(ngModel)]="chatHolder.message"
+                    autoGrow="true"
+                    placeholder="Votre message ici ..."
+                  ></ion-textarea>
+                </ion-col>
+                <ion-col size="2">
+                  <ion-button
+                    (click)="sendMessage($event)"
+                    color="white"
+                    class="sender"
+                    expand="block"
+                    mode="ios"
+                    [disabled]="
+                      !chatHolder.message.trim() || chatHolder.message == ''
+                    "
+                    style="
+                      height: 55px;
+                      margin: 0;
+                      width: 55px;
+                      --border-radius: 20em;
+                    "
+                  >
+                    <ion-icon
+                      slot="icon-only"
+                      mode="ios"
+                      name="send"
+                    ></ion-icon>
+                  </ion-button>
+                </ion-col>
+              </ion-row>
+            </div> </ion-toolbar
+        ></ion-footer>
+      </div>
+      }
+    </ion-col>
+  </ion-row>
+</ion-content>

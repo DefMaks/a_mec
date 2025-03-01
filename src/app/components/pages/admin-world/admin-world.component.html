@@ -1,0 +1,75 @@
+<ion-content color="black">
+  <h1>Admin-world works!</h1>
+
+  <!-- If ALL TEACHERS -->
+  <ng-container *ngIf="pageData === 'all-teachers'">
+    <p>all-teachers works!</p>
+    @if (appGlobal.usersByRoles?.teachers) {
+    <ion-grid>
+      <ion-row>
+        <!-- Filters -->
+        <ion-col size="4">
+          <ion-input
+            size="small"
+            placeholder="Filter by Name"
+            [(ngModel)]="filters.name"
+            (ngModelChange)="applyFilters()"
+          >
+          </ion-input>
+        </ion-col>
+        <ion-col size="4">
+          <ion-input
+            size="small"
+            placeholder="Filter by Sexe"
+            [(ngModel)]="filters.sexe"
+            (ngModelChange)="applyFilters()"
+          >
+          </ion-input>
+        </ion-col>
+        <ion-col size="4">
+          <ion-select
+            size="small"
+            placeholder="Filter by Active Status"
+            [(ngModel)]="filters.active"
+            (ionChange)="applyFilters()"
+          >
+            <ion-select-option value="">All</ion-select-option>
+            <ion-select-option value="true">Active</ion-select-option>
+            <ion-select-option value="false">Inactive</ion-select-option>
+          </ion-select>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+    <ngx-datatable
+      class="material"
+      [rows]="filteredTeachers"
+      [columns]="[
+        { prop: 'names', name: 'Name' },
+        { prop: 'sexe', name: 'Sexe' }
+      ]"
+      [headerHeight]="50"
+      [footerHeight]="50"
+      [rowHeight]="'auto'"
+      [columnMode]="'force'"
+    >
+    </ngx-datatable>
+    }
+  </ng-container>
+
+  <!-- If SINGLE TEACHERS -->
+  <ng-container *ngIf="pageData === 'teachers'">
+    <p>single teachers works!</p>
+  </ng-container>
+
+  <!-- ------ -->
+  <!-- If ALL STUDENTS -->
+  <ng-container *ngIf="pageData === 'all-students'">
+    <p>all-students works!</p>
+  </ng-container>
+  <!-- If SINGLE STUDENT -->
+  <ng-container *ngIf="pageData === 'all-students'">
+    <p>single student works!</p>
+  </ng-container>
+
+  <!-- ------ -->
+</ion-content>

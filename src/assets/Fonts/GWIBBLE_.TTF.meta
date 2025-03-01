@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 029559008f81021448d9807e207df9cd
+timeCreated: 1591267098
+licenseType: Pro
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Gwibble
+  fontNames:
+  - Gwibble
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

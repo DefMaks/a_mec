@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 3b01a6ecb8b368a4a83ee40ff906e939
+timeCreated: 1557057669
+licenseType: Pro
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Berton Voyage
+  fontNames:
+  - Berton Voyage
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

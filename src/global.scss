@@ -34,4 +34,40 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
+@import "src/theme/colors.scss";
+@import "src/app/app.component.scss";
+@import "src/theme/custom-fonts.scss";
+
 @import "@ionic/angular/css/palettes/dark.system.css";
+@import "~quill/dist/quill.core.css";
+@import "~quill/dist/quill.snow.css";
+@import "~quill/dist/quill.bubble.css";
+
+.radius-10 {
+  border-radius: 10px !important;
+}
+.radius-15 {
+  border-radius: 15px !important;
+}
+.radius-20 {
+  border-radius: 20px !important;
+}
+.radius-25 {
+  border-radius: 25px !important;
+}
+
+// ANIMATIONS
+/* Keyframes for gradual darkening */
+@keyframes gradual-darkening {
+  from {
+    background-color: rgba(0, 0, 0, 0); /* Fully transparent */
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.9); /* Fully black */
+  }
+}
+
+/* Add a class for the darkening effect */
+.darkening-effect {
+  animation: gradual-darkening 2s ease-in-out forwards;
+}

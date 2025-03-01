@@ -1,0 +1,577 @@
+<ion-content color="black" class="ion-padding" [fullscreen]="true">
+  <!-- eslint-disable @angular-eslint/template/eqeqeq -->
+  <!-- <h1>teacher-world works!</h1> -->
+
+  <ng-container *ngIf="world">
+    <!-- DEFAULT SECTION -->
+    <ng-container *ngIf="world == 'courses'">
+      <h1>
+        <ion-label class="ion-margin-end">Leçons</ion-label>
+
+        <ion-chip
+          *ngIf="!worldState"
+          (click)="add()"
+          color="white"
+          mode="ios"
+          outline="default"
+        >
+          <ion-label>Créer</ion-label>
+          <ion-icon name="add"></ion-icon>
+        </ion-chip>
+        <ion-chip
+          *ngIf="worldState"
+          (click)="back()"
+          color="white"
+          mode="ios"
+          outline="default"
+        >
+          <ion-label>Toutes les Leçons</ion-label>
+          <ion-icon name="arrow-up-outline"></ion-icon>
+        </ion-chip>
+      </h1>
+      <ng-container *ngIf="!worldState; else forNew">
+        <section class="all-courses">
+          <div [class]="!courseSelected ? 'list' : 'list preview-set'">
+            <!-- <ion-item
+              color="transparent"
+              *ngFor="let item of [].constructor(4); let i = index"
+              (click)="selectCourse(item, $event)"
+            >
+              <ion-label id="Cours-{{ i + 1 }}"
+                >Titre Leçon 1 : Lorem ipsum dolor sit amet, consectetur
+                adipisicing elit.</ion-label
+              >
+              <ion-chip slot="end" color="white" mode="ios">
+                Lectures: <ion-label>100</ion-label>
+              </ion-chip>
+            </ion-item> -->
+            <ng-container *ngIf="appGlobal.user?.lessons">
+              <ion-item
+                color="transparent"
+                *ngFor="let lesson of appGlobal.user?.lessons; let j = index"
+              >
+                <ion-label
+                  id="Cours-{{ lesson?.id }}"
+                  style="border-bottom: 1px solid rgba(255, 255, 255, 0.2)"
+                >
+                  <p
+                    class="lesson-title"
+                    (click)="selectCourse(lesson, $event)"
+                  >
+                    {{ lesson.titre }}
+                    <span style="margin-left: 20px; vertical-align: -2px">
+                      <ion-icon slot="end" name="eye-outline"></ion-icon>
+                    </span>
+                  </p>
+                  <p>
+                    <ion-chip slot="end" color="white" mode="ios">
+                      Lectures: <ion-label>100</ion-label>
+                    </ion-chip>
+                    <ion-chip slot="end" color="white" mode="ios">
+                      Quiz: <ion-label> {{ lesson.Quiz.length }} </ion-label>
+                      &nbsp;&nbsp;
+                      <ion-button
+                        style="margin-left: 20px"
+                        color="lightgrey"
+                        size="small"
+                        fill="solid"
+                        shape="round"
+                        (click)="navigate('app/new-quiz')"
+                      >
+                        <ion-icon
+                          style="margin-right: 5px"
+                          name="add-circle"
+                        ></ion-icon>
+                        Créer
+                      </ion-button>
+                    </ion-chip>
+                  </p>
+                </ion-label>
+                <br />
+                <p></p>
+              </ion-item>
+            </ng-container>
+            <ng-container *ngIf="appGlobal.user?.lessons?.length === 0">
+              <i>Aucune Leçon proposée</i>
+            </ng-container>
+          </div>
+          <div
+            [class]="!courseSelected ? 'previews' : 'previews previews-item'"
+          >
+            <ng-container *ngIf="courseSelected">
+              <ion-item
+                class="ion-text-right"
+                [lines]="false"
+                color="transparent"
+              >
+                <ion-buttons slot="end">
+                  <ion-button
+                    class="radius-15"
+                    mode="ios"
+                    color="green"
+                    fill="solid"
+                    (click)="closePreviews($event)"
+                  >
+                    <ion-icon slot="end" name="close"></ion-icon>
+                    Fermer aperçu
+                  </ion-button>
+                </ion-buttons>
+              </ion-item>
+              <section class="board-container">
+                <section class="board courses">
+                  <article class="content">
+                    <h4>
+                      <u>{{ courseSelectedTitle }}</u>
+                    </h4>
+                    <div [innerHTML]="courseSelected.content"></div>
+                    <div style="width: 100%" class="ion-text-center">
+                      <div
+                        style="
+                          border-radius: 35px;
+                          height: 5px;
+                          width: 70%;
+                          background: rgba(255, 255, 255, 0.3);
+                          margin: auto;
+                          margin-top: -30px;
+                        "
+                      ></div>
+                    </div>
+                  </article>
+                </section>
+              </section>
+            </ng-container>
+          </div>
+        </section>
+      </ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="world == 'quiz'">
+      <h1>
+        <ion-label class="ion-margin-end">Quiz</ion-label>
+
+        <ion-chip
+          *ngIf="!worldState"
+          (click)="add()"
+          color="white"
+          mode="ios"
+          outline="default"
+        >
+          <ion-label>Créer</ion-label>
+          <ion-icon name="add"></ion-icon>
+        </ion-chip>
+        <ion-chip
+          *ngIf="worldState"
+          (click)="back()"
+          color="white"
+          mode="ios"
+          outline="default"
+        >
+          <ion-label>Tous les Quiz</ion-label>
+          <ion-icon name="arrow-up-outline"></ion-icon>
+        </ion-chip>
+      </h1>
+
+      <ng-container *ngIf="!worldState; else forNew">
+        <!-- <ng-container *ngIf="!appGlobal.totalQuizLength; else quizList"></ng-container> -->
+
+        <h6>
+          Mes Quiz :
+          <ion-badge
+            color="teal"
+            mode="md"
+            style="vertical-align: -5px; padding: 5px 5px"
+            >{{ appGlobal.totalQuizLength }}</ion-badge
+          >
+        </h6>
+        <ng-container *ngIf="!appGlobal?.totalQuizLength; else quizList">
+          <i>Aucun Quiz composé</i>
+        </ng-container>
+
+        <ng-template #quizList>
+          <ng-container *ngFor="let lesson of appGlobal.user.lessons">
+            <ng-container *ngFor="let quiz of lesson.Quiz">
+              <ion-item
+                button
+                mode="ios"
+                detail="true"
+                lines="inset"
+                class="quiz-list-item"
+              >
+                <ion-label>
+                  <div>
+                    <ion-chip size="small" color="metal" mode="ios">
+                      <ion-label>{{ lesson.courses.Matiere.name }}</ion-label>
+                    </ion-chip>
+                    -
+                    <ion-chip color="teal" mode="ios">
+                      <ion-label> {{ lesson.courses.name }}</ion-label>
+                    </ion-chip>
+                  </div>
+                  <small
+                    >Créé le {{ quiz.created_at | date : "dd/MM/Y H:m" }}
+                  </small>
+                  <h5>
+                    Leçon: <strong>{{ lesson.titre }}</strong>
+                  </h5>
+                  <small>ID: {{ quiz.id }} </small>
+                </ion-label>
+              </ion-item>
+              <br />
+            </ng-container>
+          </ng-container>
+        </ng-template>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+
+  <!-- NEW SECTION -->
+  <ng-template #forNew>
+    <!-- COURSES -->
+    <ng-container *ngIf="world == 'courses'">
+      <ion-row>
+        <ion-col sizeMd="4" sizeLg="4">
+          <!-- CLASSE -->
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Classe <ion-text color="danger">*</ion-text></ion-label
+            >
+            <ng-container *ngIf="myClasses">
+              <ion-input
+                *ngIf="myClasses?.length == 1"
+                readonly="true"
+                value="{{ myClasses[0].Classes.name }}"
+              ></ion-input>
+              <ion-select
+                *ngIf="myClasses.length > 1"
+                interface="popover"
+                (ionChange)="handleChange('subject', $event)"
+                [(ngModel)]="course.classe"
+                placeholder="Choisir une classe"
+              >
+                <ion-select-option
+                  *ngFor="let item of myClasses"
+                  [value]="item.classe"
+                >
+                  {{ item.Classes.name }}
+                </ion-select-option>
+              </ion-select>
+            </ng-container>
+          </ion-item>
+        </ion-col>
+        <!--  -->
+        <ion-col sizeMd="4" sizeLg="4">
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Matière <ion-text color="danger">*</ion-text></ion-label
+            >
+            <ion-select
+              value=""
+              mode="ios"
+              color="green"
+              interface="popover"
+              (ionChange)="handleChange('courses', $event)"
+              [disabled]="!subjectsForSelection"
+              placeholder="Séléctionner matière"
+              [(ngModel)]="course.matiere"
+            >
+              <ion-select-option
+                *ngFor="let subjects of subjectsForSelection"
+                [value]="subjects.slug"
+                >{{ subjects.name }}</ion-select-option
+              >
+            </ion-select>
+          </ion-item>
+        </ion-col>
+        <!--  -->
+        <ion-col sizeMd="4" sizeLg="4">
+          <!-- COURS -->
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Cours <ion-text color="danger">*</ion-text></ion-label
+            >
+
+            <ion-select
+              value=""
+              mode="ios"
+              color="green"
+              interface="popover"
+              [disabled]="!coursesForSelection"
+              placeholder="Séléctionner cours"
+              [(ngModel)]="course.cours"
+            >
+              <ion-select-option
+                *ngFor="let course of coursesForSelection"
+                [value]="course.slug"
+                >{{ course.name }}</ion-select-option
+              >
+            </ion-select>
+          </ion-item>
+        </ion-col>
+        <!--  -->
+      </ion-row>
+      <ion-row>
+        <ion-col size="6">
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Titre <ion-text color="danger">*</ion-text></ion-label
+            >
+            <ion-input
+              [(ngModel)]="course.title"
+              required
+              placeholder="Titre de la leçon"
+            ></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col size="6">
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Objectif (facultatif)
+              <!-- <ion-text color="danger">*</ion-text> -->
+            </ion-label>
+            <ion-input
+              [(ngModel)]="course.objectif"
+              required
+              placeholder="Objectif poursuivi"
+            ></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+      <section class="board-container">
+        <section class="board">
+          <div id="editor-container" style="height: 400px"></div>
+        </section>
+      </section>
+
+      <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+        <ion-fab-button
+          color="teal"
+          (click)="getEditorContent()"
+          [disabled]="!isFormValid()"
+        >
+          <ion-icon mode="ios" name="paper-plane"></ion-icon>
+        </ion-fab-button>
+      </ion-fab>
+    </ng-container>
+    <!-- COURSES -->
+
+    <!-- QUIZ -->
+    <ng-container *ngIf="world == 'quiz'">
+      <ion-row>
+        <ion-col sizeSm="12" sizeMd="6" sizeLg="12">
+          <!-- CLASSE -->
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Classe <ion-text color="danger">*</ion-text></ion-label
+            >
+            <ng-container *ngIf="myClasses">
+              <ion-input
+                *ngIf="myClasses?.length == 1"
+                readonly="true"
+                [value]="myClasses[0].Classes.name"
+              ></ion-input>
+              <ion-select
+                *ngIf="myClasses.length > 1"
+                interface="popover"
+                (ionChange)="handleChange('subject', $event)"
+                [(ngModel)]="course.classe"
+                placeholder="Choisir une classe"
+              >
+                <ion-select-option
+                  *ngFor="let item of myClasses"
+                  [value]="item.classe"
+                >
+                  {{ item.Classes.name }}
+                </ion-select-option>
+              </ion-select>
+            </ng-container>
+          </ion-item>
+        </ion-col>
+        <!--  -->
+        <ion-col sizeSm="12" sizeMd="6" sizeLg="6">
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Matière <ion-text color="danger">*</ion-text></ion-label
+            >
+            <ion-select
+              value=""
+              mode="ios"
+              color="green"
+              interface="popover"
+              (ionChange)="handleChange('courses', $event)"
+              [disabled]="!subjectsForSelection"
+              placeholder="Séléctionner matière"
+              [(ngModel)]="course.matiere"
+            >
+              <ion-select-option
+                *ngFor="let subjects of subjectsForSelection"
+                [value]="subjects.slug"
+                >{{ subjects.name }}</ion-select-option
+              >
+            </ion-select>
+          </ion-item>
+        </ion-col>
+        <!--  -->
+        <ion-col sizeSm="12" sizeMd="6" sizeLg="6">
+          <!-- COURS -->
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Cours <ion-text color="danger">*</ion-text></ion-label
+            >
+
+            <ion-select
+              value=""
+              mode="ios"
+              color="green"
+              interface="popover"
+              (ionChange)="handleChange('lessons', $event)"
+              [disabled]="!coursesForSelection"
+              placeholder="Séléctionner cours"
+              [(ngModel)]="course.cours"
+            >
+              <ion-select-option
+                *ngFor="let course of coursesForSelection"
+                [value]="course.slug"
+                >{{ course.name }} ({{ course.lessons.length }})
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+        </ion-col>
+        <!--  -->
+      </ion-row>
+      <ion-row>
+        <ion-col size="12">
+          <ion-item color="transparent">
+            <ion-label position="stacked"
+              >Mes Leçons <ion-text color="danger">*</ion-text></ion-label
+            >
+            <ion-select
+              value=""
+              mode="ios"
+              color="green"
+              interface="popover"
+              [disabled]="!lessonsForSelection"
+              placeholder="Séléctionner cours"
+              [(ngModel)]="course.title"
+            >
+              <ion-select-option
+                *ngFor="let course of lessonsForSelection"
+                [value]="course.titre_slug"
+                >{{ course.titre }}</ion-select-option
+              >
+            </ion-select>
+          </ion-item>
+        </ion-col>
+        <ion-col size="12">
+          <ion-item color="transparent">
+            <ion-label position="stacked"> Code Quiz </ion-label>
+            <ion-input
+              readonly="true"
+              placeholder="(Généré automatiquement) "
+            ></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+      <ion-accordion-group mode="ios" expand="inset">
+        <!--  -->
+        <ng-container *ngFor="let q of quiz; let i = index">
+          <!-- <ng-container *ngFor="let q of quiz.slice(0, 1); let i = index"> -->
+          <ion-accordion value="q{{ i + 1 }}">
+            <ion-item slot="header" color="light">
+              <ion-label
+                >Q{{ i + 1 }} /
+                <span [innerHTML]="editorContents[i] | slice : 0 : 60"></span>
+              </ion-label>
+            </ion-item>
+            <div class="ion-padding" slot="content">
+              <ng-container>
+                <section class="quiz">
+                  <section class="board-container quiz-content">
+                    <section class="board">
+                      <div class="quill-editor"></div>
+                    </section>
+                  </section>
+                  <p></p>
+                  <div class="ion-padding quiz-answers">
+                    <ion-item lines="none" color="teal">
+                      <ion-label position="stacked">
+                        <ion-text color="white">
+                          <h4><strong>Réponse Correcte</strong></h4>
+                        </ion-text>
+                      </ion-label>
+                      <ion-input
+                        type="text"
+                        placeholder="Fournissez la bonne réponse"
+                        [(ngModel)]="q.correct_answer.content"
+                      ></ion-input>
+                    </ion-item>
+                    <!--  -->
+
+                    <ion-item lines="none" color="black">
+                      <ion-label position="stacked">
+                        <ion-text color="white">
+                          <h4><strong>Mauvaise réponse 1</strong></h4>
+                        </ion-text>
+                      </ion-label>
+                      <ion-input
+                        type="text"
+                        placeholder="Fournissez la mauvaise réponse 1"
+                        [(ngModel)]="q.incorrect_answers[0].content"
+                      ></ion-input>
+                    </ion-item>
+
+                    <ion-item lines="none" color="black">
+                      <ion-label position="stacked">
+                        <ion-text color="white">
+                          <h4><strong>Mauvaise réponse 2</strong></h4>
+                        </ion-text>
+                      </ion-label>
+                      <ion-input
+                        type="text"
+                        [(ngModel)]="q.incorrect_answers[1].content"
+                        placeholder="Fournissez la mauvaise réponse 2"
+                      ></ion-input>
+                    </ion-item>
+
+                    <ion-item lines="none" color="black">
+                      <ion-label position="stacked">
+                        <ion-text color="white">
+                          <h4><strong>Mauvaise réponse 3</strong></h4>
+                        </ion-text>
+                      </ion-label>
+                      <ion-input
+                        type="text"
+                        placeholder="Fournissez la mauvaise réponse 3"
+                        [(ngModel)]="q.incorrect_answers[2].content"
+                      ></ion-input>
+                    </ion-item>
+                    <!--  -->
+                  </div>
+                </section>
+                <div></div>
+                <div></div>
+              </ng-container>
+              <!-- <ng-container *ngIf="q.question">
+                <div class="nothing">
+                  <i>Aucune énoncé</i>
+                </div>
+              </ng-container> -->
+            </div>
+          </ion-accordion>
+        </ng-container>
+        <!--  -->
+      </ion-accordion-group>
+      <ion-button
+        (click)="submitQuiz()"
+        expand="block"
+        color="teal"
+        fill="solid"
+        shape="round"
+        mode="ios"
+      >
+        Soumettre le quiz
+      </ion-button>
+    </ng-container>
+    <!-- QUIZ -->
+  </ng-template>
+</ion-content>
