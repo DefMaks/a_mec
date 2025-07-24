@@ -9,9 +9,9 @@ export const environment = {
     appId: '1:521578940646:web:2445caa04aa388b1d75327',
     measurementId: 'G-CRL7Q1Z0R3',
   },
-  SUPABASE_URL: 'https://rnnciyktdmngqzomdafv.supabase.co',
+  SUPABASE_URL: 'https://gvxljedfovqnlyflgdnc.supabase.co',
   SUPABASE_KEY:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubmNpeWt0ZG1uZ3F6b21kYWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjMzOTk2MzQsImV4cCI6MjAzODk3NTYzNH0.-4LzPvGW1-ORc1zGy4JjAExEq2Vg09Zhg-UUxct2WCw',
-  SUPABASE_ADMIN_KEY:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubmNpeWt0ZG1uZ3F6b21kYWZ2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyMzM5OTYzNCwiZXhwIjoyMDM4OTc1NjM0fQ.MvxxrMilFKNTyzPhzV_G_5GdDIMfltoSJOqzSceKbAI',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2eGxqZWRmb3Zxbmx5ZmxnZG5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzA0NDQsImV4cCI6MjA2ODk0NjQ0NH0.8WHviXsU8fCgLEitIXQ0I72x4FV-8JOp4BdmVpWUiuw',
+SUPABASE_ADMIN_KEY:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2eGxqZWRmb3Zxbmx5ZmxnZG5jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzM3MDQ0NCwiZXhwIjoyMDY4OTQ2NDQ0fQ.aNXXId7EpIF_I_NNXn4nsA8azEXndOrUi3OWTglfkBQ',
 };
