@@ -312,7 +312,11 @@ export class RealtimeChatService {
   /**
    * Remove message from chatlog
    */
-  private removeMessage(message: ChatMessage) {
+  private removeMessage(message: Partial<ChatMessage>) {
+    if (!message.id || !message.chatlog) {
+      return;
+    }
+    
     const currentChatlogs = this.chatlogsSubject.value;
     const chatlogIndex = currentChatlogs.findIndex(c => c.id === message.chatlog);
     
