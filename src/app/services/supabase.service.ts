@@ -151,15 +151,15 @@ export class SupabaseService implements OnDestroy {
 
   async getSchools() {
     try {
-      const { data, error } = await this.supabase.from('schools').select('*');
+      const { data, error } = await this.supabase.from('Ecole').select('*');
       if (data && !error) {
         this.appGlobal.schools = data;
       } else if (error && error.code === '42P01') {
-        console.warn('schools table does not exist');
+        console.warn('Ecole table does not exist');
         this.appGlobal.schools = [];
       }
     } catch (error) {
-      console.warn('Error loading schools:', error);
+      console.warn('Error loading Ecole:', error);
       this.appGlobal.schools = [];
     }
   }
@@ -599,11 +599,11 @@ export class SupabaseService implements OnDestroy {
         .then(() => {
           // Load sections and options
           return Promise.all([
-            this.supabase.from('sections').select('*'),
-            this.supabase.from('section_options').select('*').then(result => {
+            this.supabase.from('Filieres').select('*'),
+            this.supabase.from('Options_filieres').select('*').then(result => {
               // Handle case where table doesn't exist
               if (result.error && result.error.code === '42P01') {
-                console.warn('section_options table does not exist');
+                console.warn('Options_filieres table does not exist');
                 return { data: [], error: null };
               }
               return result;

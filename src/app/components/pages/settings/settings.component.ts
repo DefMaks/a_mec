@@ -74,17 +74,21 @@ export class SettingsComponent implements OnInit {
   teacherProfile = {
     nom: '',
     post_nom: '',
+    names: '',
     pseudo: '',
     phone: '',
-    phone2: ''
+    phone2: '',
+    phone1: ''
   };
 
   parentProfile = {
     nom: '',
     post_nom: '',
+    names: '',
     pseudo: '',
     phone: '',
-    phone2: ''
+    phone2: '',
+    phone1: ''
   };
 
   studentProfile = {
@@ -92,7 +96,8 @@ export class SettingsComponent implements OnInit {
     post_nom: '',
     pseudo: '',
     phone: '',
-    phone2: ''
+    phone2: '',
+    classe: ''
   };
 
   constructor(
@@ -108,9 +113,20 @@ export class SettingsComponent implements OnInit {
   ngOnInit() {
     // Initialize profile data based on user role
     if (this.appGlobal.user) {
-      this.teacherProfile = { ...this.appGlobal.user };
-      this.parentProfile = { ...this.appGlobal.user };
-      this.studentProfile = { ...this.appGlobal.user };
+      this.teacherProfile = { 
+        ...this.appGlobal.user,
+        names: this.appGlobal.user.names || '',
+        phone1: this.appGlobal.user.phone || ''
+      };
+      this.parentProfile = { 
+        ...this.appGlobal.user,
+        names: this.appGlobal.user.names || '',
+        phone1: this.appGlobal.user.phone || ''
+      };
+      this.studentProfile = { 
+        ...this.appGlobal.user,
+        classe: this.appGlobal.user.classe || ''
+      };
     }
 
     // Load payment config for super admin
@@ -288,8 +304,8 @@ export class SettingsComponent implements OnInit {
     }
 
     try {
-      const { data, error } = await this.supabase.from('schools').insert([{
-        name: this.newSchool.name,
+      const { data, error } = await this.supabase.from('Ecole').insert([{
+        nom: this.newSchool.name,
         address: this.newSchool.address,
         province: this.newSchool.province,
         sector: this.newSchool.sector
@@ -314,7 +330,7 @@ export class SettingsComponent implements OnInit {
 
   async loadSchools() {
     try {
-      const { data, error } = await this.supabase.from('schools').select('*');
+      const { data, error } = await this.supabase.from('Ecole').select('*');
       if (data && !error) {
         this.appGlobal.schools = data;
         this.filteredSchools = [...data];
@@ -361,10 +377,11 @@ export class SettingsComponent implements OnInit {
     try {
       const { data, error } = await this.supabase.from('Users')
         .update({
+          names: this.teacherProfile.names,
           nom: this.teacherProfile.nom,
           post_nom: this.teacherProfile.post_nom,
           pseudo: this.teacherProfile.pseudo,
-          phone: this.teacherProfile.phone,
+          phone: this.teacherProfile.phone1,
           phone2: this.teacherProfile.phone2
         })
         .eq('id', this.appGlobal.user.id);
@@ -380,10 +397,11 @@ export class SettingsComponent implements OnInit {
     try {
       const { data, error } = await this.supabase.from('Users')
         .update({
+          names: this.parentProfile.names,
           nom: this.parentProfile.nom,
           post_nom: this.parentProfile.post_nom,
           pseudo: this.parentProfile.pseudo,
-          phone: this.parentProfile.phone,
+          phone: this.parentProfile.phone1,
           phone2: this.parentProfile.phone2
         })
         .eq('id', this.appGlobal.user.id);
