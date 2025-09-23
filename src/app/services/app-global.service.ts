@@ -39,7 +39,7 @@ export interface Link {
   providedIn: 'root',
 })
 export class AppGlobalService {
-  user!: any;
+  user: any = { role: 'unassigned' };
   matiere!: any;
   schools!: any;
   classes!: any;
@@ -58,7 +58,7 @@ export class AppGlobalService {
   viewCourse!: any;
   actualWorld = 3;
   hasSub = false;
-  lessons!: any;
+  lessons: any = [];
   chatlog!: any;
   currentChat!: any;
 

@@ -136,6 +136,10 @@ export class SupabaseService implements OnDestroy {
       return this.appGlobal;
     } catch (error) {
       console.error('Error in profile method:', error);
+      // Ensure user always has a role property
+      if (!this.appGlobal.user || !this.appGlobal.user.role) {
+        this.appGlobal.user = { ...this.appGlobal.user, role: 'unassigned' };
+      }
       return undefined;
     }
   }
@@ -242,6 +246,10 @@ export class SupabaseService implements OnDestroy {
       return this.appGlobal.totalQuizLength || 0;
     } catch (error) {
       console.error('Network error loading lessons:', error);
+      // Ensure lessons is always an array
+      if (!this.appGlobal.lessons) {
+        this.appGlobal.lessons = [];
+      }
       return 0;
     }
   }
