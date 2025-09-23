@@ -29,7 +29,7 @@ export class HomePage {
       let quizCount = 0;
 
       // Attendre que l'utilisateur soit disponible et que le rôle soit défini
-      await this.waitForCondition(() => this.appGlobal.user?.role);
+      await this.waitForCondition(() => this.appGlobal.user?.role, 150, 15000);
 
       // Vérifier si l'utilisateur est super_admin ou admin
       if (
@@ -37,7 +37,7 @@ export class HomePage {
         this.appGlobal.user.role === 'admin'
       ) {
         // Attendre que les leçons soient disponibles
-        await this.waitForCondition(() => this.appGlobal.lessons);
+        await this.waitForCondition(() => this.appGlobal.lessons, 150, 15000);
 
         // Calculer le total des quiz
         quizCount = this.appGlobal.lessons.reduce(
