@@ -27,7 +27,6 @@
             
             <!-- Unread message indicator -->
             <ion-badge 
-                *ngIf="!isMyMessage(message) && message.read_status === 1"
               color="danger" 
               *ngIf="chatlog.chatMessages && getUnreadCount(chatlog) > 0"
             >
