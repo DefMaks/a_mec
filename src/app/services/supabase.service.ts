@@ -118,7 +118,7 @@ export class SupabaseService implements OnDestroy {
       
       if (error) {
         console.error('Error fetching user profile:', error);
-        return;
+        return undefined;
       }
       
       console.log(data);
@@ -136,6 +136,7 @@ export class SupabaseService implements OnDestroy {
       return this.appGlobal;
     } catch (error) {
       console.error('Error in profile method:', error);
+      return undefined;
     }
   }
   // c5135af3-092c-4626-ace5-c8f60f7d288b
@@ -220,7 +221,7 @@ export class SupabaseService implements OnDestroy {
       
       if (error) {
         console.error('Error fetching lessons:', error);
-        return;
+        return 0;
       }
       
       if (data) {
@@ -228,16 +229,20 @@ export class SupabaseService implements OnDestroy {
         
         if (this.appGlobal.user?.role == 'teacher') {
           let totalQuizLength = 0;
-          this.appGlobal.user?.lessons?.forEach((element: any) => {
-            totalQuizLength += element.Quiz.length;
-          });
+          if (Array.isArray(this.appGlobal.user?.lessons)) {
+            this.appGlobal.user.lessons.forEach((element: any) => {
+              totalQuizLength += element.Quiz?.length || 0;
+            });
+          }
           this.appGlobal.totalQuizLength = totalQuizLength;
+          return totalQuizLength;
         }
       }
       
-      return this.appGlobal.totalQuizLength;
+      return this.appGlobal.totalQuizLength || 0;
     } catch (error) {
       console.error('Network error loading lessons:', error);
+      return 0;
     }
   }
 
