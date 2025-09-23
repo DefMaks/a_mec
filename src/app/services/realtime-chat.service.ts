@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { AppGlobalService } from './app-global.service';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { RealtimePostgresChangePayload } from '@supabase/supabase-js';
 
 export interface ChatMessage {
   id: string;
@@ -90,7 +91,7 @@ export class RealtimeChatService {
   /**
    * Handle chatlog changes from real-time subscription
    */
-  private handleChatlogChange(payload: any) {
+  private handleChatlogChange(payload: RealtimePostgresChangePayload<any>) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
     
     switch (eventType) {
@@ -109,7 +110,7 @@ export class RealtimeChatService {
   /**
    * Handle message changes from real-time subscription
    */
-  private handleMessageChange(payload: any) {
+  private handleMessageChange(payload: RealtimePostgresChangePayload<any>) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
     
     switch (eventType) {

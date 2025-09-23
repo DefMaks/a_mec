@@ -6,6 +6,7 @@ import {
   Session,
   SupabaseClient,
   User,
+  RealtimeChannel,
 } from '@supabase/supabase-js';
 import { environment } from 'src/environments/environment';
 import { AppGlobalService } from './app-global.service';
@@ -1252,5 +1253,19 @@ export class SupabaseService implements OnDestroy {
       .from('payment_history')
       .update({ status: status })
       .eq('order_id', orderId);
+  }
+
+  /**
+   * Create a realtime channel
+   */
+  channel(channelName: string): RealtimeChannel {
+    return this.supabase.channel(channelName);
+  }
+
+  /**
+   * Access to from method for direct queries
+   */
+  from(table: string) {
+    return this.supabase.from(table);
   }
 }

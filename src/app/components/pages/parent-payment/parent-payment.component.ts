@@ -260,8 +260,6 @@ export class ParentPaymentComponent implements OnInit {
       };
 
       const { error } = await this.supabase.insertPaymentRecord(paymentRecord);
-
-      if (error) {
         console.error('Error saving payment record:', error);
       }
     } catch (error) {
@@ -277,9 +275,6 @@ export class ParentPaymentComponent implements OnInit {
       const status = await this.twigaPaie.checkPaymentStatus(orderId);
       
       await this.supabase.updatePaymentStatus(orderId, status.status);
-
-      await this.loadPaymentHistory();
-      this.showToast(`Statut du paiement: ${status.status}`, 'primary');
     } catch (error) {
       console.error('Error checking payment status:', error);
       this.showToast('Erreur lors de la vérification du statut', 'danger');
