@@ -23,10 +23,10 @@
                   mode="ios"
                   interface="popover"
                   placeholder="Que voulez-vous ajouter"
-                  (ionChange)="matiereCourse($event)"
-                >
-                  <ion-select-option value="matiere">Matière</ion-select-option>
-                  <ion-select-option value="course">Cours</ion-select-option>
+                  <ion-select-option 
+                    *ngFor="let section of appGlobal.sections" 
+                    {{section.name}}
+                  </ion-select-option>
                 </ion-select>
               </ion-col>
             </ion-row>
