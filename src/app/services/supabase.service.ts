@@ -72,15 +72,17 @@ export class SupabaseService implements OnDestroy {
   authChanges(
     callback: (event: AuthChangeEvent, session: Session | null) => void
   ) {
-    return this.supabase.auth.onAuthStateChange((event, session) => {
+    return this.supabase.auth.onAuthStateChange(async (event, session) => {
       callback(event, session);
       if (event === 'SIGNED_IN' && session) {
-        // console.log('User is signed in');
-        const userId = session.user.id;
-        const user = session.user;
-        // // console.log(user);
-        this.profile(user);
-        this.listenChanges();
+        try {
+          const userId = session.user.id;
+          const user = session.user;
+          await this.profile(user);
+          this.listenChanges();
+        } catch (error) {
+          console.error('Error during sign in process:', error);
+        }
       }
     });
   }
@@ -106,46 +108,69 @@ export class SupabaseService implements OnDestroy {
 
   // GET PROFILE
 
-  profile(user: User) {
-    // // console.log(user);
-    return this.supabase
-      .from(this.USERS_DB)
-      .select(`*`)
-      .eq('user_id', user.id)
-      .single()
-      .then((result) => {
-        console.log(result.data);
-        this.appGlobal.user = result.data;
-        this.currentRole = result.data.role;
-        setTimeout(() => {
-          this.initQueries();
-        }, 500);
-        return this.appGlobal;
-      });
+  async profile(user: User) {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.USERS_DB)
+        .select(`*`)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+      
+      console.log(data);
+      this.appGlobal.user = data;
+      this.currentRole = data.role;
+      
+      setTimeout(async () => {
+        try {
+          await this.initQueries();
+        } catch (error) {
+          console.error('Error initializing queries:', error);
+        }
+      }, 500);
+      
+      return this.appGlobal;
+    } catch (error) {
+      console.error('Error in profile method:', error);
+    }
   }
   // c5135af3-092c-4626-ace5-c8f60f7d288b
   // GET PROFILE
 
   // INIT QUERIES
   async initQueries() {
-    this.getRoles();
-    this.getSubjects();
-    this.getSchools();
-    setTimeout(() => {
-      this.getClasses();
-      // console.log(this.appGlobal.user);
-      if (
-        this.appGlobal.user.role == 'super_admin' ||
-        this.appGlobal.user.role == 'admin' ||
-        this.appGlobal.user.role == 'teacher'
-      ) {
-        this.getChat();
-        this.getLessons();
-      }
+    try {
+      await this.getRoles();
+      await this.getSubjects();
+      await this.getSchools();
+      
+      setTimeout(async () => {
+        try {
+          await this.getClasses();
+          
+          if (
+            this.appGlobal.user.role == 'super_admin' ||
+            this.appGlobal.user.role == 'admin' ||
+            this.appGlobal.user.role == 'teacher'
+          ) {
+            await this.getChat();
+            await this.getLessons();
+          }
+        } catch (error) {
+          console.error('Error in delayed queries:', error);
+        }
+      }, 1300);
+      
+      console.log(this.appGlobal);
       return this.appGlobal;
-    }, 1300);
-    console.log(this.appGlobal);
-    return this.appGlobal;
+    } catch (error) {
+      console.error('Error in initQueries:', error);
+      return this.appGlobal;
+    }
   }
   // INIT QUERIES
 
@@ -157,9 +182,12 @@ export class SupabaseService implements OnDestroy {
       } else if (error && error.code === '42P01') {
         console.warn('Ecole table does not exist');
         this.appGlobal.schools = [];
+      } else if (error) {
+        console.error('Error fetching schools:', error);
+        this.appGlobal.schools = [];
       }
     } catch (error) {
-      console.warn('Error loading Ecole:', error);
+      console.error('Network error loading schools:', error);
       this.appGlobal.schools = [];
     }
   }
@@ -185,17 +213,33 @@ export class SupabaseService implements OnDestroy {
   }
 
   async getLessons() {
-    return (
-      this.supabase
+    try {
+      const { data, error } = await this.supabase
         .from('lessons')
-        .select(`*, Quiz(*), courses(*, Matiere(*)), teacher(*), lesson_reads(*)`)
-        // .select(`*, Quiz(*), Matiere (*, courses(*))`)
-        .then((result) => {
-          // // console.log('Getting Classes');
-          if (result.data) {
-            // console.log(result.data);
-            this.appGlobal.lessons = result.data;
-            // return this.appGlobal;
+        .select(`*, Quiz(*), courses(*, Matiere(*)), teacher(*), lesson_reads(*)`);
+      
+      if (error) {
+        console.error('Error fetching lessons:', error);
+        return;
+      }
+      
+      if (data) {
+        this.appGlobal.lessons = data;
+        
+        if (this.appGlobal.user?.role == 'teacher') {
+          let totalQuizLength = 0;
+          this.appGlobal.user?.lessons?.forEach((element: any) => {
+            totalQuizLength += element.Quiz.length;
+          });
+          this.appGlobal.totalQuizLength = totalQuizLength;
+        }
+      }
+      
+      return this.appGlobal.totalQuizLength;
+    } catch (error) {
+      console.error('Network error loading lessons:', error);
+    }
+  }
 
             if (this.appGlobal.user?.role == 'teacher') {
               let totalQuizLength = 0;
