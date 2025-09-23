@@ -130,6 +130,7 @@ export class SupabaseService implements OnDestroy {
   async initQueries() {
     this.getRoles();
     this.getSubjects();
+    this.getSchools();
     setTimeout(() => {
       this.getClasses();
       // console.log(this.appGlobal.user);
@@ -147,6 +148,22 @@ export class SupabaseService implements OnDestroy {
     return this.appGlobal;
   }
   // INIT QUERIES
+
+  async getSchools() {
+    try {
+      const { data, error } = await this.supabase.from('schools').select('*');
+      if (data && !error) {
+        this.appGlobal.schools = data;
+      } else if (error && error.code === '42P01') {
+        console.warn('schools table does not exist');
+        this.appGlobal.schools = [];
+      }
+    } catch (error) {
+      console.warn('Error loading schools:', error);
+      this.appGlobal.schools = [];
+    }
+  }
+
   // QUERIES
   async getUsersByRoles(roles: string) {
     if (roles != 'student') {
@@ -583,7 +600,14 @@ export class SupabaseService implements OnDestroy {
           // Load sections and options
           return Promise.all([
             this.supabase.from('sections').select('*'),
-            this.supabase.from('section_options').select('*')
+            this.supabase.from('section_options').select('*').then(result => {
+              // Handle case where table doesn't exist
+              if (result.error && result.error.code === '42P01') {
+                console.warn('section_options table does not exist');
+                return { data: [], error: null };
+              }
+              return result;
+            })
           ]).then(([sectionsResult, optionsResult]) => {
             if (sectionsResult.data) {
               this.appGlobal.sections = sectionsResult.data;
@@ -591,6 +615,9 @@ export class SupabaseService implements OnDestroy {
             if (optionsResult.data) {
               this.appGlobal.sectionsOptions = optionsResult.data;
             }
+            return this.appGlobal;
+          }).catch(error => {
+            console.warn('Error loading sections/options:', error);
             return this.appGlobal;
           });
         })

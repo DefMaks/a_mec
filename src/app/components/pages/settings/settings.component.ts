@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
+import { RouterModule } from '@angular/router';
 import { AppGlobalService } from 'src/app/services/app-global.service';
 import { GlobalFunctionsService } from 'src/app/services/global-functions.service';
 import { SupabaseService } from 'src/app/services/supabase.service';
@@ -12,7 +13,7 @@ import { SupabaseService } from 'src/app/services/supabase.service';
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule],
+  imports: [IonicModule, CommonModule, FormsModule, RouterModule],
 })
 export class SettingsComponent implements OnInit {
   filteredSchools: any = [];
@@ -56,6 +57,44 @@ export class SettingsComponent implements OnInit {
   };
   // SUPER ADMIN
 
+  // New properties for role-specific functionality
+  newSchool = {
+    name: '',
+    address: '',
+    province: '',
+    sector: ''
+  };
+
+  paymentConfig = {
+    monthlyFee: 5000,
+    currency: 'CDF',
+    feePercentage: 2.5
+  };
+
+  teacherProfile = {
+    nom: '',
+    post_nom: '',
+    pseudo: '',
+    phone: '',
+    phone2: ''
+  };
+
+  parentProfile = {
+    nom: '',
+    post_nom: '',
+    pseudo: '',
+    phone: '',
+    phone2: ''
+  };
+
+  studentProfile = {
+    nom: '',
+    post_nom: '',
+    pseudo: '',
+    phone: '',
+    phone2: ''
+  };
+
   constructor(
     public appGlobal: AppGlobalService,
     private supabase: SupabaseService,
@@ -66,7 +105,21 @@ export class SettingsComponent implements OnInit {
     }
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    // Initialize profile data based on user role
+    if (this.appGlobal.user) {
+      this.teacherProfile = { ...this.appGlobal.user };
+      this.parentProfile = { ...this.appGlobal.user };
+      this.studentProfile = { ...this.appGlobal.user };
+    }
+
+    // Load payment config for super admin
+    if (this.appGlobal.user?.role === 'super_admin') {
+      this.loadPaymentConfig();
+    }
+
+    this.loadSchools();
+  }
 
   filterIng(choice: string, motive: string, itemS: any, ev: any | undefined) {
     // return console.log(motive, item);
@@ -226,5 +279,138 @@ export class SettingsComponent implements OnInit {
 
     this.newCourse.name = '';
     return this.newCourse, this.newMatiere;
+  }
+
+  // School management methods
+  async createSchool() {
+    if (!this.newSchool.name.trim()) {
+      return;
+    }
+
+    try {
+      const { data, error } = await this.supabase.from('schools').insert([{
+        name: this.newSchool.name,
+        address: this.newSchool.address,
+        province: this.newSchool.province,
+        sector: this.newSchool.sector
+      }]);
+
+      if (error) throw error;
+
+      // Reset form
+      this.newSchool = {
+        name: '',
+        address: '',
+        province: '',
+        sector: ''
+      };
+
+      // Reload schools
+      this.loadSchools();
+    } catch (error) {
+      console.error('Error creating school:', error);
+    }
+  }
+
+  async loadSchools() {
+    try {
+      const { data, error } = await this.supabase.from('schools').select('*');
+      if (data && !error) {
+        this.appGlobal.schools = data;
+        this.filteredSchools = [...data];
+      }
+    } catch (error) {
+      console.error('Error loading schools:', error);
+    }
+  }
+
+  // Payment configuration methods
+  async loadPaymentConfig() {
+    try {
+      const { data, error } = await this.supabase.from('payment_config').select('*').single();
+      if (data && !error) {
+        this.paymentConfig = {
+          monthlyFee: data.monthly_fee || 5000,
+          currency: data.currency || 'CDF',
+          feePercentage: data.fee_percentage || 2.5
+        };
+      }
+    } catch (error) {
+      console.error('Error loading payment config:', error);
+    }
+  }
+
+  async updatePaymentConfig() {
+    try {
+      const { data, error } = await this.supabase.from('payment_config')
+        .upsert({
+          monthly_fee: this.paymentConfig.monthlyFee,
+          currency: this.paymentConfig.currency,
+          fee_percentage: this.paymentConfig.feePercentage
+        });
+
+      if (error) throw error;
+      console.log('Payment config updated successfully');
+    } catch (error) {
+      console.error('Error updating payment config:', error);
+    }
+  }
+
+  // Profile update methods
+  async updateTeacherProfile() {
+    try {
+      const { data, error } = await this.supabase.from('Users')
+        .update({
+          nom: this.teacherProfile.nom,
+          post_nom: this.teacherProfile.post_nom,
+          pseudo: this.teacherProfile.pseudo,
+          phone: this.teacherProfile.phone,
+          phone2: this.teacherProfile.phone2
+        })
+        .eq('id', this.appGlobal.user.id);
+
+      if (error) throw error;
+      console.log('Teacher profile updated successfully');
+    } catch (error) {
+      console.error('Error updating teacher profile:', error);
+    }
+  }
+
+  async updateParentProfile() {
+    try {
+      const { data, error } = await this.supabase.from('Users')
+        .update({
+          nom: this.parentProfile.nom,
+          post_nom: this.parentProfile.post_nom,
+          pseudo: this.parentProfile.pseudo,
+          phone: this.parentProfile.phone,
+          phone2: this.parentProfile.phone2
+        })
+        .eq('id', this.appGlobal.user.id);
+
+      if (error) throw error;
+      console.log('Parent profile updated successfully');
+    } catch (error) {
+      console.error('Error updating parent profile:', error);
+    }
+  }
+
+  async updateStudentProfile() {
+    try {
+      const { data, error } = await this.supabase.from('Students')
+        .update({
+          nom: this.studentProfile.nom,
+          post_nom: this.studentProfile.post_nom,
+          pseudo: this.studentProfile.pseudo,
+          phone: this.studentProfile.phone,
+          phone2: this.studentProfile.phone2
+        })
+        .eq('user_id', this.appGlobal.user.id);
+
+      if (error) throw error;
+      console.log('Student profile updated successfully');
+    } catch (error) {
+      console.error('Error updating student profile:', error);
+    }
   }
 }
