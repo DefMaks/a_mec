@@ -803,35 +803,37 @@ export class SupabaseService implements OnDestroy {
 
   getMessages() {}
 
-  async checkMessages(data: any) {
-    let messages;
+  async checkMessages(data: any): Promise<void> {
+    let localMessages;
     // setInterval(() => {
     if (data) {
-      const localMessages = localStorage.getItem('messages');
-      if (localMessages) {
-        messages = JSON.parse(localMessages);
+      const localMessagesStr = localStorage.getItem('messages');
+      if (localMessagesStr) {
+        localMessages = JSON.parse(localMessagesStr);
         if (data.length > 0) {
-          let messages = {
+          let messageStats = {
             unread: 0,
             read: 0,
           };
           // console.log('Messages', this.appGlobal?.chatlog);
           data.forEach((chatlog: any) => {
-            const unreadCount = chatlog.chatMessages.filter(
+            const unreadCount = chatlog.chatMessages?.filter(
               (msg: any) => msg.read_status === 1
-            ).length;
+            )?.length || 0;
             // const readCount = chatlog.chatMessages.filter(
             //   (msg: any) => msg.read_status === 0
             // ).length;
-            const readCount = chatlog.chatMessages.length;
+            const readCount = chatlog.chatMessages?.length || 0;
 
-            messages.unread += unreadCount;
-            messages.read += readCount;
+            messageStats.unread += unreadCount;
+            messageStats.read += readCount;
 
             // console.log(unreadCount); // Affichera 2
           });
-          this.appGlobal.chatlog.read = messages.read;
-          this.appGlobal.chatlog.unread = messages.unread;
+          if (this.appGlobal.chatlog) {
+            this.appGlobal.chatlog.read = messageStats.read;
+            this.appGlobal.chatlog.unread = messageStats.unread;
+          }
           console.log(this.appGlobal.chatlog);
 
           /*
@@ -849,12 +851,12 @@ export class SupabaseService implements OnDestroy {
                 return this.appGlobal.chatlog;
               }
             }*/
-          return this.appGlobal.chatlog;
+          return;
         }
         return;
       }
     }
-    return this.appGlobal.chatlog;
+    return;
     // }, 2500);
   }
 
