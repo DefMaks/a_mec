@@ -68,6 +68,7 @@ export class ParentPaymentComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
+    await this.loadPaymentConfiguration();
     await this.loadChildren();
     await this.loadPaymentHistory();
   }

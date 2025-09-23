@@ -579,6 +579,21 @@ export class SupabaseService implements OnDestroy {
               }
             });
         })
+        .then(() => {
+          // Load sections and options
+          return Promise.all([
+            this.supabase.from('sections').select('*'),
+            this.supabase.from('section_options').select('*')
+          ]).then(([sectionsResult, optionsResult]) => {
+            if (sectionsResult.data) {
+              this.appGlobal.sections = sectionsResult.data;
+            }
+            if (optionsResult.data) {
+              this.appGlobal.sectionsOptions = optionsResult.data;
+            }
+            return this.appGlobal;
+          });
+        })
     );
   }
 
