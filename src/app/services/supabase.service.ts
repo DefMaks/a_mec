@@ -741,28 +741,34 @@ export class SupabaseService implements OnDestroy {
   }
 
   async getChat() {
-    try {
-      const { data, error } = await this.supabase
+    return (
+      this.supabase
         .from('chatlog')
         .select(`*, chatMessages(*)`)
-        .match({ teacher: this.appGlobal.user.id });
-      
-      if (error) {
-        console.error('Error fetching chat:', error);
-        return;
-      }
-      
-      if (data) {
-        this.appGlobal.chatlog = data;
-        this.checkMessages(data);
-        console.log(this.appGlobal);
-        localStorage.setItem('messages', JSON.stringify(this.appGlobal.chatlog));
-      }
-      
-      return this.appGlobal;
-    } catch (error) {
-      console.error('Network error loading chat:', error);
-    }
+        // .eq('user_id', this.appGlobal.user.id)
+        .match({ teacher: this.appGlobal.user.id })
+
+        // .single()
+        .then((result) => {
+          // console.log('chatlog', result);
+          this.appGlobal.chatlog = result.data;
+          this.checkMessages(result.data);
+          // this.appGlobal.chatlog.forEach((chatlog: any) => {
+          //   const unreadCount = chatlog.chatMessages.filter(
+          //     (msg: any) => msg.read_status === 1
+          //   ).length;
+          //   chatlog.unread = unreadCount;
+          //   console.log(unreadCount); // Affichera 2
+          // });
+          console.log(this.appGlobal);
+          localStorage.setItem(
+            'messages',
+            JSON.stringify(this.appGlobal.chatlog)
+          );
+          // this.appGlobal.user.pop(matieres) = result.data;
+          return this.appGlobal;
+        })
+    );
   }
 
   async insertNewQuiz(quiz: any) {
