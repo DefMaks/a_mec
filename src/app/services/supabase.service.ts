@@ -241,22 +241,6 @@ export class SupabaseService implements OnDestroy {
     }
   }
 
-            if (this.appGlobal.user?.role == 'teacher') {
-              let totalQuizLength = 0;
-              this.appGlobal.user?.lessons?.forEach((element: any) => {
-                // console.log('index: ', element);
-                totalQuizLength += element.Quiz.length;
-              });
-              this.appGlobal.totalQuizLength = totalQuizLength;
-            }
-          } else {
-            console.warn('getLessons -> ', result);
-          }
-        }),
-      this.appGlobal.totalQuizLength
-    );
-  }
-
   async getRoles() {
     try {
       const { data: users, error } = await this.supabase
@@ -451,7 +435,7 @@ export class SupabaseService implements OnDestroy {
                     break;
 
                   case 'teacher':
-                    selectQuery = `*, teachers_classes(*, Classes(*)`; // Default select query
+                    selectQuery = `*, teachers_classes(*, Classes(*))`; // Default select query
 
                     // Additional query or processing for teacher
                     try {
@@ -684,60 +668,69 @@ export class SupabaseService implements OnDestroy {
   }
 
   async getSubjects() {
-    return (
-      this.supabase
+    try {
+      const { data: matiereData, error: matiereError } = await this.supabase
         .from(this.MATIERE_DB)
-        .select(`*, courses(*)`)
-        // .eq('user_id', user.id)
-        // .single()
-        .then((result) => {
-          // console.log(result.data);
-          this.appGlobal.matiere = result.data;
-          return this.appGlobal.matiere;
-        })
-        .then(() => {
-          return this.supabase
-            .from('levels')
-            .select(`*, Classes(*), Matiere(*))`)
-            .then((result2) => {
-              // console.log('Getting Levels', result2);
-              if (result2.data) {
-                // console.log(result.data);
-                this.appGlobal.niveaux = result2.data;
-                return this.appGlobal;
-              } else {
-                return console.warn('getLevels -> ', result2);
-              }
-            });
-        })
-        .then(() => {
-          // Load sections and options
-          return Promise.all([
-            this.supabase.from('Filieres').select('*'),
-            this.supabase.from('Options_filieres').select('*')
-          ]).then(([sectionsResult, optionsResult]) => {
-            if (sectionsResult.data && !sectionsResult.error) {
-              this.appGlobal.sections = sectionsResult.data;
-            } else if (sectionsResult.error && sectionsResult.error.code === '42P01') {
-              console.warn('Filieres table does not exist');
-              this.appGlobal.sections = [];
-            }
-            
-            if (optionsResult.data && !optionsResult.error) {
-              this.appGlobal.sectionsOptions = optionsResult.data;
-            } else if (optionsResult.error && optionsResult.error.code === '42P01') {
-              console.warn('Options_filieres table does not exist');
-              this.appGlobal.sectionsOptions = [];
-            }
-            return this.appGlobal;
-          }).catch(error => {
-            console.warn('Error loading sections/options, setting empty arrays:', error);
-            this.appGlobal.sections = [];
-            this.appGlobal.sectionsOptions = [];
-            return this.appGlobal;
-          });
-        })
-    );
+        .select(`*, courses(*)`);
+      
+      if (matiereError) {
+        console.error('Error fetching matiere:', matiereError);
+      } else if (matiereData) {
+        this.appGlobal.matiere = matiereData;
+      }
+      
+      // Load levels
+      try {
+        const { data: levelsData, error: levelsError } = await this.supabase
+          .from('levels')
+          .select(`*, Classes(*), Matiere(*)`);
+        
+        if (levelsError) {
+          console.error('Error fetching levels:', levelsError);
+        } else if (levelsData) {
+          this.appGlobal.niveaux = levelsData;
+        }
+      } catch (error) {
+        console.error('Network error loading levels:', error);
+      }
+      
+      // Load sections and options
+      try {
+        const [sectionsResult, optionsResult] = await Promise.all([
+          this.supabase.from('Filieres').select('*'),
+          this.supabase.from('Options_filieres').select('*')
+        ]);
+        
+        if (sectionsResult.data && !sectionsResult.error) {
+          this.appGlobal.sections = sectionsResult.data;
+        } else if (sectionsResult.error && sectionsResult.error.code === '42P01') {
+          console.warn('Filieres table does not exist');
+          this.appGlobal.sections = [];
+        } else if (sectionsResult.error) {
+          console.error('Error fetching sections:', sectionsResult.error);
+          this.appGlobal.sections = [];
+        }
+        
+        if (optionsResult.data && !optionsResult.error) {
+          this.appGlobal.sectionsOptions = optionsResult.data;
+        } else if (optionsResult.error && optionsResult.error.code === '42P01') {
+          console.warn('Options_filieres table does not exist');
+          this.appGlobal.sectionsOptions = [];
+        } else if (optionsResult.error) {
+          console.error('Error fetching section options:', optionsResult.error);
+          this.appGlobal.sectionsOptions = [];
+        }
+      } catch (error) {
+        console.error('Network error loading sections/options:', error);
+        this.appGlobal.sections = [];
+        this.appGlobal.sectionsOptions = [];
+      }
+      
+      return this.appGlobal;
+    } catch (error) {
+      console.error('Network error in getSubjects:', error);
+      return this.appGlobal;
+    }
   }
 
   async getClasses() {
@@ -757,29 +750,12 @@ export class SupabaseService implements OnDestroy {
   }
 
   async getChat() {
-    try {
-      const { data, error } = await this.supabase
+    return (
+      this.supabase
         .from('chatlog')
         .select(`*, chatMessages(*)`)
-        .match({ teacher: this.appGlobal.user.id });
-      
-      if (error) {
-        console.error('Error fetching chat:', error);
-        return;
-      }
-      
-      if (data) {
-        this.appGlobal.chatlog = data;
-        this.checkMessages(data);
-        console.log(this.appGlobal);
-        localStorage.setItem('messages', JSON.stringify(this.appGlobal.chatlog));
-      }
-      
-      return this.appGlobal;
-    } catch (error) {
-      console.error('Network error loading chat:', error);
-    }
-  }
+        // .eq('user_id', this.appGlobal.user.id)
+        .match({ teacher: this.appGlobal.user.id })
 
         // .single()
         .then((result) => {
