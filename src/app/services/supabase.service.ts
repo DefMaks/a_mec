@@ -242,17 +242,10 @@ export class SupabaseService implements OnDestroy {
   }
 
   async getRoles() {
-    try {
-      const { data: users, error } = await this.supabase
-        .from(this.USERS_DB)
-        .select(`*`);
-      
-      if (error) {
-        console.error('Error fetching users for roles:', error);
-        return this.appGlobal;
-      }
-      
-      try {
+    return this.supabase
+      .from(this.USERS_DB)
+      .select(`*`)
+      .then((result) => {
         let selectQuery = `*`; // Default select query
 
         switch (this.currentRole) {
@@ -276,108 +269,79 @@ export class SupabaseService implements OnDestroy {
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for super_admin
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'super_admin');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.super_admins = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching super_admins:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'super_admin')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.super_admins = res.data;
+                      });
                     break;
 
                   case 'admin':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for admin
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'admin');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.admins = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching admins:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'admin')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.admins = res.data;
+                      });
                     break;
 
                   case 'inspector':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for inspector
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'inspector');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.inspectors = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching inspectors:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'inspector')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.inspectors = res.data;
+                      });
                     break;
 
                   case 'teacher':
                     selectQuery = `*, teachers_classes(*, Classes(*))`; // Default select query
 
                     // Additional query or processing for teacher
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'teacher');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.teachers = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching teachers:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then((res: any) => {
+                        // // console.log('teacher', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+                      });
                     break;
 
                   case 'parent':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for parent
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'parent');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.parents = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching parents:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'parent')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.parents = res.data;
+                      });
                     break;
 
                   case 'student':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for student
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'student');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.students = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching students:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
                     break;
                 }
               });
@@ -402,90 +366,66 @@ export class SupabaseService implements OnDestroy {
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for admin
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'admin');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.admins = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching admins:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'admin')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.admins = res.data;
+                      });
                     break;
 
                   case 'inspector':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for inspector
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'inspector');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.inspectors = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching inspectors:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'inspector')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.inspectors = res.data;
+                      });
                     break;
 
                   case 'teacher':
                     selectQuery = `*, teachers_classes(*, Classes(*))`; // Default select query
 
                     // Additional query or processing for teacher
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'teacher');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.teachers = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching teachers:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then((res: any) => {
+                        // // console.log('teacher', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+                      });
                     break;
 
                   case 'parent':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for parent
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'parent');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.parents = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching parents:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'parent')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.parents = res.data;
+                      });
                     break;
 
                   case 'student':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for student
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'student');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.students = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching students:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
                     break;
                 }
               });
@@ -504,54 +444,40 @@ export class SupabaseService implements OnDestroy {
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for inspector
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'inspector');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.inspectors = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching inspectors:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'inspector')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.inspectors = res.data;
+                      });
                     break;
 
                   case 'teacher':
                     selectQuery = `* `; // Default select query
 
                     // Additional query or processing for teacher
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'teacher');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.teachers = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching teachers:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then((res: any) => {
+                        // // console.log('teacher', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
+                      });
                     break;
 
                   case 'student':
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for student
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'student');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.students = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching students:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
                     break;
                 }
               });
@@ -572,31 +498,30 @@ export class SupabaseService implements OnDestroy {
                     const selectQuery2 = `*, teachers_classes(*, Classes(*, Students(*) )), lessons(*, courses(*, Matiere(*) ), Quiz(*))`; // Default select query
 
                     // Additional query or processing for teacher
-                    try {
-                      const { data: teachersData, error: teachersError } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'teacher');
-                      
-                      if (!teachersError && teachersData) {
-                        this.appGlobal.usersByRoles.teachers = teachersData;
-                      }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'teacher')
+                      .then(async (res: any) => {
+                        // console.log('teacher 23', res);
+                        this.appGlobal.usersByRoles.teachers = res.data;
 
-                      try {
-                        const { data: teacherDetailData, error: teacherDetailError } = await this.supabase
+                        await this.supabase
                           .from(this.USERS_DB)
                           .select(selectQuery2)
-                          .eq('id', this.appGlobal.user.id);
-                        
-                        if (!teacherDetailError && teacherDetailData) {
-                          this.appGlobal.user = teacherDetailData[0];
-                        }
-                      } catch (error) {
-                        console.error('Error fetching teacher details:', error);
-                      }
-                    } catch (error) {
-                      console.error('Error fetching teachers:', error);
-                    }
+                          .eq('id', this.appGlobal.user.id)
+                          .then((res2: any) => {
+                            // // console.log('Teacher Results : ', res2);
+
+                            if (res2) {
+                              // console.log('Teacher: ', res2.data);
+                              this.appGlobal.user = res2.data[0];
+                            } else {
+                              console.log('Teacher: Aucune reponse ');
+                            }
+                            return this.appGlobal.user;
+                          });
+                      });
 
                     break;
 
@@ -604,17 +529,21 @@ export class SupabaseService implements OnDestroy {
                     selectQuery = `*, Classes(*)`; // Default select query
 
                     // Additional query or processing for student
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.STUDENTS_DB)
-                        .select(selectQuery);
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.students = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching students:', error);
-                    }
+                    await this.supabase
+                      .from(this.STUDENTS_DB)
+                      .select(selectQuery)
+                      // .eq('classe', this.appGlobal.user.id)
+                      .then((res2: any) => {
+                        // // console.log('Role: Student -> ', res2.data);
+                        // console.log(this.appGlobal.user.teachers_classes);
+                        // let students_in_class
+                        // this.appGlobal.user.teachers_classes.forEach(
+                        //   (classe: any) => {
+
+                        //   }
+                        // );
+                        this.appGlobal.usersByRoles.students = res2.data;
+                      });
                     break;
                 }
               });
@@ -633,38 +562,39 @@ export class SupabaseService implements OnDestroy {
                     selectQuery = `*`; // Default select query
 
                     // Additional query or processing for student
-                    try {
-                      const { data, error } = await this.supabase
-                        .from(this.USERS_DB)
-                        .select(selectQuery)
-                        .eq('role', 'student');
-                      
-                      if (!error && data) {
-                        this.appGlobal.usersByRoles.students = data;
-                      }
-                    } catch (error) {
-                      console.error('Error fetching students:', error);
-                    }
+                    await this.supabase
+                      .from(this.USERS_DB)
+                      .select(selectQuery)
+                      .eq('role', 'student')
+                      .then((res: any) => {
+                        this.appGlobal.usersByRoles.students = res.data;
+                      });
                     break;
                 }
               });
             }
             break;
 
+          /*
           default:
-            console.log('Unknown role:', this.currentRole);
+            // Handling for other roles
+            const defaultRoles = result.data?.filter((item: any) => {
+              return ['inspector', 'teacher', 'parent', 'student'].includes(
+                item.role
+              );
+            });
+
+            if (defaultRoles) {
+              defaultRoles.forEach(async (item: any) => {
+                // Handle each role similar to the super_admin case
+              });
+            }
             break;
+            */
         }
 
         return this.appGlobal;
-      } catch (error) {
-        console.error('Error processing roles:', error);
-        return this.appGlobal;
-      }
-    } catch (error) {
-      console.error('Network error in getRoles:', error);
-      return this.appGlobal;
-    }
+      });
   }
 
   async getSubjects() {
