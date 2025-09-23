@@ -21,6 +21,11 @@ export class HomePage {
     public appGlobal: AppGlobalService,
     public gf: GlobalFunctionsService
   ) {
+    // Remove immediate call, will be called in ngOnInit
+  }
+
+  ngOnInit() {
+    // Data should be available now, call countQuiz directly
     this.countQuiz();
   }
 
@@ -28,28 +33,23 @@ export class HomePage {
     try {
       let quizCount = 0;
 
-      // Attendre que l'utilisateur soit disponible et que le rôle soit défini
-      await this.waitForCondition(() => this.appGlobal.user?.role, 150, 15000);
-
-      // Vérifier si l'utilisateur est super_admin ou admin
+      // Check if user is super_admin or admin (data should be available now)
       if (
-        this.appGlobal.user.role === 'super_admin' ||
-        this.appGlobal.user.role === 'admin'
+        this.appGlobal.user?.role === 'super_admin' ||
+        this.appGlobal.user?.role === 'admin'
       ) {
-        // Attendre que les leçons soient disponibles
-        await this.waitForCondition(() => this.appGlobal.lessons, 150, 15000);
-
-        // Calculer le total des quiz
-        quizCount = this.appGlobal.lessons.reduce(
+        // Calculate total quiz count (lessons should be available now)
+        quizCount = (this.appGlobal.lessons || []).reduce(
           (total: number, lesson: any) => total + (lesson.Quiz?.length || 0),
           0
         );
       }
 
-      // console.log('Total des quiz :', quizCount);
+      console.log('Total des quiz :', quizCount);
       this.quiz = quizCount;
     } catch (error) {
       console.error('Erreur lors du comptage des quiz :', error);
+      this.quiz = 0; // Set default value on error
     }
   }
 
@@ -69,28 +69,4 @@ export class HomePage {
     console.log(proposition);
   }
 
-  // Fonction utilitaire pour attendre une condition
-  waitForCondition(
-    conditionFn: () => boolean,
-    interval = 150,
-    timeout = 10000
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const startTime = Date.now();
-
-      const checkCondition = () => {
-        if (conditionFn()) {
-          resolve();
-        } else if (Date.now() - startTime >= timeout) {
-          reject(
-            new Error("Timeout atteint lors de l'attente de la condition")
-          );
-        } else {
-          setTimeout(checkCondition, interval);
-        }
-      };
-
-      checkCondition();
-    });
-  }
 }

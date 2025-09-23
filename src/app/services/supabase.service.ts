@@ -73,16 +73,20 @@ export class SupabaseService implements OnDestroy {
     callback: (event: AuthChangeEvent, session: Session | null) => void
   ) {
     return this.supabase.auth.onAuthStateChange(async (event, session) => {
-      callback(event, session);
       if (event === 'SIGNED_IN' && session) {
         try {
           const userId = session.user.id;
           const user = session.user;
           await this.profile(user);
           this.listenChanges();
+          // Call callback after profile is loaded
+          callback(event, session);
         } catch (error) {
           console.error('Error during sign in process:', error);
+          callback(event, session);
         }
+      } else {
+        callback(event, session);
       }
     });
   }
@@ -153,22 +157,21 @@ export class SupabaseService implements OnDestroy {
       await this.getSubjects();
       await this.getSchools();
       
-      setTimeout(async () => {
-        try {
-          await this.getClasses();
-          
-          if (
-            this.appGlobal.user.role == 'super_admin' ||
-            this.appGlobal.user.role == 'admin' ||
-            this.appGlobal.user.role == 'teacher'
-          ) {
-            await this.getChat();
-            await this.getLessons();
-          }
-        } catch (error) {
-          console.error('Error in delayed queries:', error);
+      // Execute all queries sequentially without delays
+      try {
+        await this.getClasses();
+        
+        if (
+          this.appGlobal.user.role == 'super_admin' ||
+          this.appGlobal.user.role == 'admin' ||
+          this.appGlobal.user.role == 'teacher'
+        ) {
+          await this.getChat();
+          await this.getLessons();
         }
-      }, 1300);
+      } catch (error) {
+        console.error('Error in delayed queries:', error);
+      }
       
       console.log(this.appGlobal);
       return this.appGlobal;

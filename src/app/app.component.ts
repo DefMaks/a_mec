@@ -16,7 +16,13 @@ export class AppComponent {
     private supabase: SupabaseService
   ) {}
 
-  ngOnInit() {
-    this.supabase.authChanges((_, session) => (this.session = session));
+  async ngOnInit() {
+    this.supabase.authChanges(async (_, session) => {
+      this.session = session;
+      if (session?.user) {
+        // Wait for profile and all data to be loaded
+        await this.supabase.profile(session.user);
+      }
+    });
   }
 }

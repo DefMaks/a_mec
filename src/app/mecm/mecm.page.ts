@@ -111,43 +111,31 @@ export class MecmPage implements OnInit {
   }
 
   async ngOnInit() {
-    // setTimeout(() => {
-    //   if (this.appGlobal?.user) {
-    //     const world = this.world.filter((item: World) => {
-    //       return item.role == this.appGlobal?.user.role;
-    //     });
-    //     // console.log(world);
-    //     return (this.theLinks = world), (this.maskLoader = false);
-    //   } else {
-    //     return;
-    //   }
-    // }, 7000);
-    this.checkUserAndSetLinks();
+    // Data should be available now, set links directly
+    if (this.appGlobal.user?.role) {
+      this.theLinks = this.world.filter(
+        (item: World) => item.role === this.appGlobal.user.role
+      );
+      this.maskLoader = false;
+    } else {
+      // Fallback if data is not ready
+      this.checkUserAndSetLinks();
+    }
   }
 
   checkUserAndSetLinks() {
+    // Simplified fallback - just wait a bit and try again
     setTimeout(() => {
-      let elapsedTime = 0;
-      const interval = 500; // Vérifier toutes les 500ms
-      const maxTime = 12000; // Limite de 12 secondes
-
-      const checkUser = setInterval(() => {
-        const user = this.appGlobal.user;
-        console.log('checkUserAndSetLinks: ', user);
-        elapsedTime += interval;
-
-        if (user.id) {
-          this.theLinks = this.world.filter(
-            (item: World) => item.role === user.role
-          );
-          this.maskLoader = false;
-          clearInterval(checkUser); // Arrête l'intervalle dès qu'on a une valeur
-        } else if (elapsedTime >= maxTime) {
-          console.log('Retry'); // Ou toute autre action de gestion d'erreur
-          clearInterval(checkUser); // Arrête l'intervalle après 12 secondes
-        }
-      }, interval);
-    }, 4000);
+      if (this.appGlobal.user?.role) {
+        this.theLinks = this.world.filter(
+          (item: World) => item.role === this.appGlobal.user.role
+        );
+        this.maskLoader = false;
+      } else {
+        console.log('User data still not available');
+        this.maskLoader = false; // Show interface anyway
+      }
+    }, 2000);
   }
 
   ngAfterViewInit() {
