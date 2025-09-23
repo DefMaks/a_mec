@@ -174,4 +174,17 @@ export class ChatLogComponent implements OnInit {
       minute: '2-digit' 
     });
   }
+
+  /**
+   * Get unread message count for a chatlog
+   */
+  getUnreadCount(chatlog: ChatLog): number {
+    if (!chatlog.chatMessages) {
+      return 0;
+    }
+    
+    return chatlog.chatMessages.filter(message => 
+      message.read_status === 1 && message.reciever === this.appGlobal.user.id
+    ).length;
+  }
 }
