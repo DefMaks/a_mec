@@ -136,14 +136,15 @@ export class SupabaseService implements OnDestroy {
           console.error('Error initializing queries:', error);
         }
       }, 500);
+          await this.initQueries();
+        } catch (error) {
+          console.error('Error initializing queries:', error);
+        }
+      }, 500);
       
       return this.appGlobal;
     } catch (error) {
       console.error('Error in profile method:', error);
-      // Ensure user always has a role property
-      if (!this.appGlobal.user || !this.appGlobal.user.role) {
-        this.appGlobal.user = { ...this.appGlobal.user, role: 'unassigned' };
-      }
       return undefined;
     }
   }
@@ -156,7 +157,12 @@ export class SupabaseService implements OnDestroy {
       await this.getRoles();
       await this.getSubjects();
       await this.getSchools();
-      
+      try {
+        await this.getClasses();
+        
+        if (
+          this.appGlobal.user.role == 'super_admin' ||
+          this.appGlobal.user.role == 'admin' ||
       // Execute all queries sequentially without delays
       try {
         await this.getClasses();
