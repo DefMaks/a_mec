@@ -152,6 +152,7 @@ export class SupabaseService implements OnDestroy {
       await this.getRoles();
       await this.getSubjects();
       await this.getSchools();
+      
       // Execute all queries sequentially without delays
       try {
         await this.getClasses();
