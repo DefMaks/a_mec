@@ -3,11 +3,10 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
-import { id } from '@swimlane/ngx-datatable';
 import { Subscription } from 'rxjs';
 import { AppGlobalService } from 'src/app/services/app-global.service';
-import { MessagingService } from 'src/app/services/messaging.service';
 import { SupabaseService } from 'src/app/services/supabase.service';
+import { RealtimeChatService, ChatLog, ChatMessage } from 'src/app/services/realtime-chat.service';
 
 @Component({
   selector: 'app-chat-log',
@@ -21,165 +20,89 @@ export class ChatLogComponent implements OnInit {
 
   @Input() item: any;
 
-  chatlogs: any = this.appGlobal.chatlog;
+  chatlogs: ChatLog[] = [];
   selectedChat: string = '';
-  selectedChatData!: any;
-  chatlogSub!: Subscription;
+  selectedChatData!: ChatLog;
+  messages: ChatMessage[] = [];
+  
+  // Subscriptions
+  private chatlogSubscription!: Subscription;
+  private messagesSubscription!: Subscription;
+  private unreadCountSubscription!: Subscription;
 
   chatHolder = {
     message: '',
   };
 
-  chatlog: any[] = [];
-  private chatlogSubscription: Subscription | null = null;
+  // UI states
+  isLoading = false;
+  isSending = false;
 
   constructor(
     public appGlobal: AppGlobalService,
     private supabase: SupabaseService,
-    private messaging: MessagingService
+    private realtimeChat: RealtimeChatService
   ) {}
 
-  /*
   ngOnInit() {
-    // 🔥 Abonnement à `chatlog$` pour recevoir les mises à jour en direct
-    this.chatlogSub = this.appGlobal.chatlog$.subscribe((chatlogs) => {
-      this.chatlogs = chatlogs.map((chatlog) => ({
-        ...chatlog,
-        studentData: null,
-      }));
-      console.log(chatlogs);
-    });
-
-    setInterval(() => {
-      if (this.appGlobal.newMessage === 1) {
-        console.log('Got new Message');
-        this.setMessages();
-        this.appGlobal.newMessage = 0;
-      }
-    }, 2600);
+    this.initializeRealtimeChat();
   }
 
   ngOnDestroy() {
-    if (this.chatlogSub) {
-      this.chatlogSub.unsubscribe();
-    }
-  }
-  */
-  ngOnInit() {
-    // S'abonner aux changements de chatlog
-    this.chatlogSubscription = this.appGlobal.chatlog$.subscribe((data) => {
-      this.chatlog = data;
-      console.log('Chatlog mis à jour:', this.chatlog);
-      // console.log(this.appGlobal?.chatlog);
-      const { unread, read, ...updatedChatlog } = this.appGlobal?.chatlog;
-      console.log(updatedChatlog);
-    });
-
-    // Initialiser les données
-    this.chatlog = this.appGlobal.getChatlog();
-  }
-
-  ngOnDestroy() {
-    // Désabonner pour éviter les fuites mémoire
     if (this.chatlogSubscription) {
       this.chatlogSubscription.unsubscribe();
     }
-  }
-
-  async setMessages() {
-    console.log(this.appGlobal.chatlog$);
-    const updatedChatlogs = this.chatlogs.map((chatlog: any) => ({
-      ...chatlog,
-      studentData: null,
-    }));
-
-    for (const chatlog of updatedChatlogs) {
-      chatlog.lessonData = await this.getTheLesson(chatlog.lesson);
-      chatlog.studentData = await this.getTheStudent(chatlog.student);
+    if (this.messagesSubscription) {
+      this.messagesSubscription.unsubscribe();
     }
-
-    this.appGlobal.updateChatlog(updatedChatlogs);
+    if (this.unreadCountSubscription) {
+      this.unreadCountSubscription.unsubscribe();
+    }
   }
 
-  /*
-  async ngOnInit() {
-    this.setMessages();
-    setInterval(() => {
-      if ((this.appGlobal.newMessage = 1)) {
-        console.log('Got new Message');
-        this.setMessages();
-        this.appGlobal.newMessage = 0;
+  /**
+   * Initialize real-time chat functionality
+   */
+  private initializeRealtimeChat() {
+    // Subscribe to chatlogs
+    this.chatlogSubscription = this.realtimeChat.chatlogs$.subscribe((chatlogs) => {
+      this.chatlogs = chatlogs;
+      console.log('Chatlogs updated:', chatlogs);
+    });
+
+    // Subscribe to unread count
+    this.unreadCountSubscription = this.realtimeChat.unreadCount$.subscribe((count) => {
+      console.log('Unread messages count:', count);
+      // Update global state if needed
+      if (this.appGlobal.chatlog) {
+        this.appGlobal.chatlog.unread = count;
       }
-    }, 2600);
+    });
+
+    // Load initial data
+    this.realtimeChat.loadInitialChatData();
   }
 
-  async setMessages() {
-    await console.log(this.appGlobal.chatlog);
-    if (this.appGlobal.chatlog) {
-      this.chatlogs = this.appGlobal.chatlog;
-      delete this.chatlogs.unread;
-      delete this.chatlogs.read;
-      console.log(this.chatlogs);
-      this.chatlogs.forEach((chatlog: any) => {
-        chatlog.studentData = null;
-        if (chatlog) {
-          this.getTheLesson(chatlog.lesson).then((res: any) => {
-            chatlog.lessonData = res;
-          });
-          // console.log(chatlog);
-          // this.getTheStudent(chatlog.student);
-          this.getTheStudent(chatlog.student).then((res: any) => {
-            chatlog.studentData = res;
-          });
-        }
-      });
-    }
-    return this.chatlogs;
-    
-  }
-  */
-
-  openChat(chatlog: any, ev: any) {
+  /**
+   * Open a specific chat
+   */
+  async openChat(chatlog: ChatLog, ev: any) {
     this.selectedChat = chatlog.id;
-    console.log(ev);
-    // console.log(chatlog);
     this.selectedChatData = chatlog;
-    console.log(this.selectedChatData);
+    
+    // Load messages for this chatlog
+    this.messages = await this.realtimeChat.getMessagesForChatlog(chatlog.id);
+    
+    // Mark messages as read
+    await this.realtimeChat.markMessagesAsRead(chatlog.id);
 
-    // alert(chatlog.id);
     this.scrollToBottom();
   }
 
-  async getTheStudent(id: any) {
-    // console.log(this.appGlobal.usersByRoles);
-    let studentData!: any;
-    this.appGlobal.usersByRoles.teachers.find((teacherId: any) => {
-      if (teacherId.id == this.appGlobal.user.id) {
-        // console.log(teacherId);
-        const student = this.appGlobal.usersByRoles?.students.find(
-          (studentId: any) => {
-            return studentId.id == id;
-          }
-        );
-        studentData = student;
-        // console.log('getTheStudent: ', student);
-      }
-    });
-
-    return studentData;
-  }
-
-  async getTheLesson(id: any) {
-    console.log(this.appGlobal.lessons);
-    const lesson = this.appGlobal.lessons.find((item: any) => {
-      return item.lesson_id == id;
-    });
-    console.log(lesson);
-    return lesson;
-  }
-
+  /**
+   * Scroll to bottom of chat
+   */
   scrollToBottom() {
-    // Use setTimeout to ensure the element is available
     setTimeout(() => {
       try {
         this.chatBottom.nativeElement.scrollIntoView({ behavior: 'smooth' });
@@ -189,12 +112,66 @@ export class ChatLogComponent implements OnInit {
     }, 0);
   }
 
-  sendMessage(ev: any) {
-    // console.log(this.chatHistory);
-    // this.supabase.sendMessage(this.chatHolder).then((res: any) => {
-    //   this.message = '';
-    //   console.log(res);
-    //   this.chatHistory.chatMessages.push(res.chatData);
-    // });
+  /**
+   * Send a new message
+   */
+  async sendMessage(ev: any) {
+    if (!this.chatHolder.message.trim() || !this.selectedChat) {
+      return;
+    }
+
+    this.isSending = true;
+    
+    try {
+      const success = await this.realtimeChat.sendMessage(
+        this.selectedChat,
+        this.chatHolder.message.trim()
+      );
+
+      if (success) {
+        this.chatHolder.message = '';
+        this.scrollToBottom();
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      this.isSending = false;
+    }
+  }
+
+  /**
+   * Get student display name
+   */
+  getStudentDisplayName(chatlog: ChatLog): string {
+    if (chatlog.studentData) {
+      return chatlog.studentData.pseudo || 
+             `${chatlog.studentData.nom} ${chatlog.studentData.post_nom}`;
+    }
+    return 'Étudiant';
+  }
+
+  /**
+   * Get lesson title
+   */
+  getLessonTitle(chatlog: ChatLog): string {
+    return chatlog.lessonData?.titre || 'Leçon';
+  }
+
+  /**
+   * Check if message is from current user
+   */
+  isMyMessage(message: ChatMessage): boolean {
+    return message.sender === this.appGlobal.user.id;
+  }
+
+  /**
+   * Format message timestamp
+   */
+  formatMessageTime(timestamp: string): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('fr-FR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   }
 }

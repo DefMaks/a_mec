@@ -95,6 +95,13 @@ const routes: Routes = [
         path: 'parents/:id',
         component: AdminWorldComponent,
       },
+      {
+        path: 'parent-payment',
+        loadComponent: () =>
+          import('../components/pages/parent-payment/parent-payment.component').then(
+            (m) => m.ParentPaymentComponent
+          ),
+      },
       // END ADMIN WORLD
 
       {

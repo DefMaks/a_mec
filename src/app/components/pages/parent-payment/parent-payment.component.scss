@@ -1,0 +1,115 @@
+ion-content {
+  --background: var(--ion-color-black);
+  --color: var(--ion-color-white);
+}
+
+.radius-15 {
+  border-radius: 15px;
+}
+
+ion-segment {
+  margin: 16px;
+}
+
+ion-card {
+  margin-bottom: 16px;
+}
+
+ion-card[color="teal"] {
+  ion-card-title,
+  ion-card-subtitle,
+  ion-label {
+    color: white;
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  
+  ion-spinner {
+    margin-bottom: 16px;
+  }
+  
+  p {
+    color: var(--ion-color-medium);
+    margin: 0;
+  }
+}
+
+ion-item {
+  --background: transparent;
+  --border-color: rgba(255, 255, 255, 0.2);
+}
+
+ion-checkbox {
+  --color-checked: var(--ion-color-teal);
+  --border-color-checked: var(--ion-color-teal);
+}
+
+ion-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.payment-summary {
+  background: rgba(var(--ion-color-teal-rgb), 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+ion-button[color="white"] {
+  --color: var(--ion-color-teal);
+  font-weight: 600;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  ion-card {
+    margin: 8px;
+  }
+  
+  .ion-padding {
+    padding: 8px;
+  }
+}
+
+// Status colors
+ion-badge[color="success"] {
+  --background: var(--ion-color-success);
+}
+
+ion-badge[color="warning"] {
+  --background: var(--ion-color-warning);
+}
+
+ion-badge[color="danger"] {
+  --background: var(--ion-color-danger);
+}
+
+ion-badge[color="medium"] {
+  --background: var(--ion-color-medium);
+}
+
+// Animation for payment cards
+ion-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+ion-card:hover {
+  transform: translateY(-2px);
+}
+
+// Custom styling for selected children
+ion-item ion-checkbox[aria-checked="true"] + ion-label {
+  opacity: 1;
+  font-weight: 500;
+}
+
+ion-item ion-checkbox[aria-checked="false"] + ion-label {
+  opacity: 0.7;
+}

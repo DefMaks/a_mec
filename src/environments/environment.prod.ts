@@ -14,4 +14,6 @@ export const environment = {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2eGxqZWRmb3Zxbmx5ZmxnZG5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzA0NDQsImV4cCI6MjA2ODk0NjQ0NH0.8WHviXsU8fCgLEitIXQ0I72x4FV-8JOp4BdmVpWUiuw',
 SUPABASE_ADMIN_KEY:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2eGxqZWRmb3Zxbmx5ZmxnZG5jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzM3MDQ0NCwiZXhwIjoyMDY4OTQ2NDQ0fQ.aNXXId7EpIF_I_NNXn4nsA8azEXndOrUi3OWTglfkBQ',
+  TWIGA_PAIE_API_URL: 'https://api-gateway-production-9ad5.up.railway.app/api',
+  TWIGA_PAIE_API_KEY: 'your_production_api_key_here', // Replace with your actual production API key
 };

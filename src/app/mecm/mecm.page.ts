@@ -56,6 +56,13 @@ export class MecmPage implements OnInit {
       iconname: 'chatbubbles-outline',
       iconsrc: undefined,
     },
+    {
+      indications: 'Parent',
+      title: 'Paiements',
+      url: '/app/parent-payment',
+      iconname: 'card-outline',
+      iconsrc: undefined,
+    },
   ];
 
   world: World[] = [
@@ -77,6 +84,14 @@ export class MecmPage implements OnInit {
         this.all_links[2],
         this.all_links[3],
         this.all_links[0],
+      ],
+    },
+    {
+      name: 'Parent',
+      role: 'parent',
+      links: [
+        this.all_links[4], // Paiements
+        this.all_links[0], // Settings
       ],
     },
   ];
