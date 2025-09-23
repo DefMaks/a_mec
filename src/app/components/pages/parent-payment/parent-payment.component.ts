@@ -77,19 +77,7 @@ export class ParentPaymentComponent implements OnInit {
    */
   async loadChildren() {
     try {
-      const { data, error } = await this.supabase.supabase
-        .from('Students')
-        .select(`
-          id,
-          nom,
-          post_nom,
-          pseudo,
-          classe,
-          niveau,
-          user_id,
-          Classes(name)
-        `)
-        .eq('parental', this.appGlobal.user.id);
+      const { data, error } = await this.supabase.getStudentsByParentId(this.appGlobal.user.id);
 
       if (error) {
         console.error('Error loading children:', error);
@@ -113,12 +101,7 @@ export class ParentPaymentComponent implements OnInit {
    */
   async loadPaymentHistory() {
     try {
-      // Note: You'll need to create this table in your database
-      const { data, error } = await this.supabase.supabase
-        .from('payment_history')
-        .select('*')
-        .eq('parent_id', this.appGlobal.user.id)
-        .order('payment_date', { ascending: false });
+      const { data, error } = await this.supabase.getPaymentHistoryByParentId(this.appGlobal.user.id);
 
       if (error) {
         console.error('Error loading payment history:', error);
@@ -264,21 +247,19 @@ export class ParentPaymentComponent implements OnInit {
    */
   private async savePaymentRecord(child: Student, orderId: string, status: string) {
     try {
-      const { error } = await this.supabase.supabase
-        .from('payment_history')
-        .insert([
-          {
-            parent_id: this.appGlobal.user.id,
-            child_id: child.user_id,
-            student_id: child.id,
-            amount: child.paymentAmount,
-            currency: this.currency,
-            order_id: orderId,
-            status: status,
-            description: `${this.paymentForm.description} - ${child.nom} ${child.post_nom}`,
-            payment_date: new Date().toISOString()
-          }
-        ]);
+      const paymentRecord = {
+        parent_id: this.appGlobal.user.id,
+        child_id: child.user_id,
+        student_id: child.id,
+        amount: child.paymentAmount,
+        currency: this.currency,
+        order_id: orderId,
+        status: status,
+        description: `${this.paymentForm.description} - ${child.nom} ${child.post_nom}`,
+        payment_date: new Date().toISOString()
+      };
+
+      const { error } = await this.supabase.insertPaymentRecord(paymentRecord);
 
       if (error) {
         console.error('Error saving payment record:', error);
@@ -295,11 +276,7 @@ export class ParentPaymentComponent implements OnInit {
     try {
       const status = await this.twigaPaie.checkPaymentStatus(orderId);
       
-      // Update payment record in database
-      await this.supabase.supabase
-        .from('payment_history')
-        .update({ status: status.status })
-        .eq('order_id', orderId);
+      await this.supabase.updatePaymentStatus(orderId, status.status);
 
       await this.loadPaymentHistory();
       this.showToast(`Statut du paiement: ${status.status}`, 'primary');

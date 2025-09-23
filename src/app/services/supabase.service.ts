@@ -1215,4 +1215,42 @@ export class SupabaseService implements OnDestroy {
       });
     }
   }
+
+  // Payment-related methods
+  async getStudentsByParentId(parentId: string) {
+    return await this.supabase
+      .from('Students')
+      .select(`
+        id,
+        nom,
+        post_nom,
+        pseudo,
+        classe,
+        niveau,
+        user_id,
+        Classes(name)
+      `)
+      .eq('parental', parentId);
+  }
+
+  async getPaymentHistoryByParentId(parentId: string) {
+    return await this.supabase
+      .from('payment_history')
+      .select('*')
+      .eq('parent_id', parentId)
+      .order('payment_date', { ascending: false });
+  }
+
+  async insertPaymentRecord(paymentRecord: any) {
+    return await this.supabase
+      .from('payment_history')
+      .insert([paymentRecord]);
+  }
+
+  async updatePaymentStatus(orderId: string, status: string) {
+    return await this.supabase
+      .from('payment_history')
+      .update({ status: status })
+      .eq('order_id', orderId);
+  }
 }
