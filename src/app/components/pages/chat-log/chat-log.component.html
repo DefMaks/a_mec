@@ -27,7 +27,7 @@
             
             <!-- Unread message indicator -->
             <ion-badge 
-              slot="end" 
+                *ngIf="!isMyMessage(message) && message.read_status === 1"
               color="danger" 
               *ngIf="chatlog.chatMessages && getUnreadCount(chatlog) > 0"
             >
@@ -165,78 +165,6 @@
           </ion-footer>
         </div>
       </ng-template>
-    </ion-col>
-  </ion-row>
-</ion-content>
-
-            >
-              @if (message.sender != this.appGlobal.user.id &&
-              message.reciever_status == 1) {
-              <div class="message-not-read">
-                <ion-icon
-                  name="notifications-outline"
-                  style="vertical-align: -1px"
-                ></ion-icon>
-                Message non lu
-              </div>
-              }
-              <ion-card
-                [class]="
-                  message.sender !== this.appGlobal.user.id
-                    ? 'message not-mines ion-no-margin'
-                    : 'message mines ion-no-margin'
-                "
-              >
-                <div class="message-content">
-                  {{ message.message }}
-                </div>
-                <br />
-                <small>datime</small>
-              </ion-card>
-            </div>
-          </ng-container>
-          <div id="chat-bottom" #chatBottom></div>
-        </section>
-        <ion-footer class="ion-no-border" translucent="true">
-          <ion-toolbar>
-            <div>
-              <ion-row class="ion-align-items-center">
-                <ion-col size="10">
-                  <ion-textarea
-                    [(ngModel)]="chatHolder.message"
-                    autoGrow="true"
-                    placeholder="Votre message ici ..."
-                  ></ion-textarea>
-                </ion-col>
-                <ion-col size="2">
-                  <ion-button
-                    (click)="sendMessage($event)"
-                    color="white"
-                    class="sender"
-                    expand="block"
-                    mode="ios"
-                    [disabled]="
-                      !chatHolder.message.trim() || chatHolder.message == ''
-                    "
-                    style="
-                      height: 55px;
-                      margin: 0;
-                      width: 55px;
-                      --border-radius: 20em;
-                    "
-                  >
-                    <ion-icon
-                      slot="icon-only"
-                      mode="ios"
-                      name="send"
-                    ></ion-icon>
-                  </ion-button>
-                </ion-col>
-              </ion-row>
-            </div> </ion-toolbar
-        ></ion-footer>
-      </div>
-      }
     </ion-col>
   </ion-row>
 </ion-content>

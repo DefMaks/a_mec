@@ -52,7 +52,7 @@ export class RealtimeChatService {
    */
   private initializeRealtimeSubscriptions() {
     // Subscribe to chatlog changes
-    this.subscription = this.supabase.supabase
+    this.subscription = this.supabase
       .channel('chatlog-changes')
       .on(
         'postgres_changes',
@@ -70,7 +70,7 @@ export class RealtimeChatService {
       .subscribe();
 
     // Subscribe to chatMessages changes
-    this.messageSubscription = this.supabase.supabase
+    this.messageSubscription = this.supabase
       .channel('chatmessages-changes')
       .on(
         'postgres_changes',
@@ -132,7 +132,7 @@ export class RealtimeChatService {
    */
   async loadInitialChatData() {
     try {
-      const { data: chatlogs, error } = await this.supabase.supabase
+      const { data: chatlogs, error } = await this.supabase
         .from('chatlog')
         .select(`
           *,
@@ -172,7 +172,7 @@ export class RealtimeChatService {
    */
   async sendMessage(chatlogId: string, message: string): Promise<boolean> {
     try {
-      const { data, error } = await this.supabase.supabase
+      const { data, error } = await this.supabase
         .from('chatMessages')
         .insert([
           {
@@ -202,7 +202,7 @@ export class RealtimeChatService {
    */
   async markMessagesAsRead(chatlogId: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase.supabase
+      const { error } = await this.supabase
         .from('chatMessages')
         .update({ read_status: 0 })
         .eq('chatlog', chatlogId)
@@ -226,7 +226,7 @@ export class RealtimeChatService {
    */
   async getMessagesForChatlog(chatlogId: string): Promise<ChatMessage[]> {
     try {
-      const { data, error } = await this.supabase.supabase
+      const { data, error } = await this.supabase
         .from('chatMessages')
         .select('*')
         .eq('chatlog', chatlogId)
