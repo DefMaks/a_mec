@@ -171,7 +171,7 @@ export class SupabaseService implements OnDestroy {
     return (
       this.supabase
         .from('lessons')
-        .select(`*, Quiz(*), courses(*, Matiere(*)), teacher(*)`)
+        .select(`*, Quiz(*), courses(*, Matiere(*)), teacher(*), lesson_reads(*)`)
         // .select(`*, Quiz(*), Matiere (*, courses(*))`)
         .then((result) => {
           // // console.log('Getting Classes');

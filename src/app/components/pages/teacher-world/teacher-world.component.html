@@ -65,7 +65,7 @@
                   </p>
                   <p>
                     <ion-chip slot="end" color="white" mode="ios">
-                      Lectures: <ion-label>100</ion-label>
+                      Lectures: <ion-label>{{ lesson.lesson_reads?.length || 0 }}</ion-label>
                     </ion-chip>
                     <ion-chip slot="end" color="white" mode="ios">
                       Quiz: <ion-label> {{ lesson.Quiz.length }} </ion-label>
