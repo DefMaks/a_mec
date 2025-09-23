@@ -385,8 +385,7 @@ export class SettingsComponent implements OnInit {
           nom: this.teacherProfile.nom,
           post_nom: this.teacherProfile.post_nom,
           pseudo: this.teacherProfile.pseudo,
-          phone: this.teacherProfile.phone1,
-          phone2: this.teacherProfile.phone2
+          email: this.teacherProfile.email
         })
         .eq('id', this.appGlobal.user.id);
 
@@ -405,8 +404,7 @@ export class SettingsComponent implements OnInit {
           nom: this.parentProfile.nom,
           post_nom: this.parentProfile.post_nom,
           pseudo: this.parentProfile.pseudo,
-          phone: this.parentProfile.phone1,
-          phone2: this.parentProfile.phone2
+          email: this.parentProfile.email
         })
         .eq('id', this.appGlobal.user.id);
 
