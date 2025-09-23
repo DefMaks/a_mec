@@ -68,9 +68,37 @@ export class ParentPaymentComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    await this.loadPaymentConfiguration();
     await this.loadChildren();
     await this.loadPaymentHistory();
+  }
+
+  /**
+   * Load payment configuration from database
+   */
+  async loadPaymentConfiguration() {
+    try {
+      const { data, error } = await this.supabase.from('payment_config')
+        .select('*')
+        .eq('active', true)
+        .single();
+
+      if (error) {
+        console.error('Error loading payment config:', error);
+        // Set default values if config not found
+        this.monthlyFee = 5000;
+        return;
+      }
+
+      if (data) {
+        this.monthlyFee = data.monthly_fee || 5000;
+        this.currency = data.currency || 'XOF';
+        this.feePercentage = data.fee_percentage || 2.5;
+      }
+    } catch (error) {
+      console.error('Error in loadPaymentConfiguration:', error);
+      // Set default values on error
+      this.monthlyFee = 5000;
+    }
   }
 
   /**
