@@ -809,60 +809,53 @@ export class SupabaseService implements OnDestroy {
   getMessages() {}
 
   async checkMessages(data: any): Promise<void> {
-    let localMessages;
-    // setInterval(() => {
     if (data) {
-      const localMessagesStr = localStorage.getItem('messages');
-      if (localMessagesStr) {
-        localMessages = JSON.parse(localMessagesStr);
-        if (data.length > 0) {
-          let messageStats = {
-            unread: 0,
-            read: 0,
-          };
-          // console.log('Messages', this.appGlobal?.chatlog);
-          data.forEach((chatlog: any) => {
-            const unreadCount = chatlog.chatMessages?.filter(
-              (msg: any) => msg.read_status === 1
-            )?.length || 0;
-            // const readCount = chatlog.chatMessages.filter(
-            //   (msg: any) => msg.read_status === 0
-            // ).length;
-            const readCount = chatlog.chatMessages?.length || 0;
+      if (data.length > 0) {
+        let messageStats = {
+          unread: 0,
+          read: 0,
+        };
+        // console.log('Messages', this.appGlobal?.chatlog);
+        data.forEach((chatlog: any) => {
+          const unreadCount = chatlog.chatMessages?.filter(
+            (msg: any) => msg.read_status === 1
+          )?.length || 0;
+          // const readCount = chatlog.chatMessages.filter(
+          //   (msg: any) => msg.read_status === 0
+          // ).length;
+          const readCount = chatlog.chatMessages?.length || 0;
 
-            messageStats.unread += unreadCount;
-            messageStats.read += readCount;
+          messageStats.unread += unreadCount;
+          messageStats.read += readCount;
 
-            // console.log(unreadCount); // Affichera 2
-          });
-          if (this.appGlobal.chatlog) {
-            this.appGlobal.chatlog.read = messageStats.read;
-            this.appGlobal.chatlog.unread = messageStats.unread;
-          }
-          console.log(this.appGlobal.chatlog);
-
-          /*
-            if (this.appGlobal.chatlog?.chatMessages) {
-              console.log('chatMessages!');
-              if (
-                messages[0].chatMessages.length !=
-                this.appGlobal.chatlog?.chatMessages.length
-              ) {
-                console.log('Nouveaux Messages !');
-                // localStorage.setItem(
-                //   'messages',
-                //   JSON.stringify(this.appGlobal.chatlog)
-                // );
-                return this.appGlobal.chatlog;
-              }
-            }*/
-          return;
+          // console.log(unreadCount); // Affichera 2
+        });
+        if (this.appGlobal.chatlog) {
+          this.appGlobal.chatlog.read = messageStats.read;
+          this.appGlobal.chatlog.unread = messageStats.unread;
         }
+        console.log(this.appGlobal.chatlog);
+
+        /*
+          if (this.appGlobal.chatlog?.chatMessages) {
+            console.log('chatMessages!');
+            if (
+              messages[0].chatMessages.length !=
+              this.appGlobal.chatlog?.chatMessages.length
+            ) {
+              console.log('Nouveaux Messages !');
+              // localStorage.setItem(
+              //   'messages',
+              //   JSON.stringify(this.appGlobal.chatlog)
+              // );
+              return this.appGlobal.chatlog;
+            }
+          }*/
         return;
       }
+      return;
     }
     return;
-    // }, 2500);
   }
 
   // async insertNewQuiz__(quiz: any) {

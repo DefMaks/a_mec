@@ -31,4 +31,30 @@ export class GlobalFunctionsService {
       .replace(/-+/g, '-'); // remove consecutive hyphens
     return str;
   }
+
+  waitForCondition(
+    predicate: () => any,
+    timeout: number = 10000,
+    interval: number = 100
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      
+      const check = () => {
+        if (predicate()) {
+          resolve();
+          return;
+        }
+        
+        if (Date.now() - startTime >= timeout) {
+          reject(new Error('Timeout atteint lors de l\'attente de la condition'));
+          return;
+        }
+        
+        setTimeout(check, interval);
+      };
+      
+      check();
+    });
+  }
 }
