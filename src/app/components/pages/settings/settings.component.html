@@ -1,21 +1,21 @@
 <!-- eslint-disable @angular-eslint/template/eqeqeq -->
 <ion-content [fullscreen]="true">
-  <p>settings works!</p>
+  <h1>Paramètres</h1>
+
+  <!-- SUPER ADMIN SETTINGS -->
   <ng-container *ngIf="appGlobal.user?.role === 'super_admin'">
-    <h2>Super Admin</h2>
+    <h2>Super Administrateur</h2>
 
     <ion-accordion-group color="transparent" expand="compact" value="matieres">
-      <!--  -->
-
+      <!-- Gestion des Matières et Cours -->
       <ion-accordion value="matieres" color="transparent">
         <ion-item slot="header" color="teal">
-          <ion-label>Gestion des Matières et autres</ion-label>
+          <ion-label>Gestion des Matières et Cours</ion-label>
         </ion-item>
         <div class="ion-padding" slot="content">
           <ion-grid fixed>
             <ion-row>
               <ion-col size="12">
-                <!-- <ion-label>Pizza</ion-label> -->
                 <ion-select
                   [(ngModel)]="appContent.slug"
                   value=""
@@ -115,12 +115,12 @@
                             mode="ios"
                             interface="popover"
                           >
-                            <ion-select-option value="peperoni"
-                              >Peperoni</ion-select-option
+                            <ion-select-option
+                              *ngFor="let section of appGlobal.sections"
+                              [value]="section.slug"
                             >
-                            <ion-select-option value="hawaii"
-                              >Hawaii</ion-select-option
-                            >
+                              {{ section.name }}
+                            </ion-select-option>
                           </ion-select>
                         </ion-item>
                       </ng-container>
@@ -135,12 +135,12 @@
                           mode="ios"
                           interface="popover"
                         >
-                          <ion-select-option value="peperoni"
-                            >Peperoni</ion-select-option
+                          <ion-select-option
+                            *ngFor="let option of appGlobal.sectionsOptions"
+                            [value]="option.slug"
                           >
-                          <ion-select-option value="hawaii"
-                            >Hawaii</ion-select-option
-                          >
+                            {{ option.name }}
+                          </ion-select-option>
                         </ion-select>
                       </ion-item>
 
@@ -229,12 +229,12 @@
                             mode="ios"
                             interface="popover"
                           >
-                            <ion-select-option value="peperoni"
-                              >Peperoni</ion-select-option
+                            <ion-select-option
+                              *ngFor="let section of appGlobal.sections"
+                              [value]="section.slug"
                             >
-                            <ion-select-option value="hawaii"
-                              >Hawaii</ion-select-option
-                            >
+                              {{ section.name }}
+                            </ion-select-option>
                           </ion-select>
                         </ion-item>
                       </ng-container>
@@ -249,11 +249,11 @@
                           mode="ios"
                           interface="popover"
                         >
-                          <ion-select-option 
-                            *ngFor="let option of appGlobal.sectionsOptions" 
+                          <ion-select-option
+                            *ngFor="let option of appGlobal.sectionsOptions"
                             [value]="option.slug"
                           >
-                            {{option.name}}
+                            {{ option.name }}
                           </ion-select-option>
                         </ion-select>
                       </ion-item>
@@ -359,8 +359,8 @@
                     <ng-template #noSubjects>
                       <i>Aucune Matière inscrite pour cette classe</i>
                     </ng-template>
-                  </ion-card></ng-container
-                >
+                  </ion-card>
+                </ng-container>
                 <ng-container
                   *ngIf="this.newCourseSelects.matiere && newCourse.classe"
                 >
@@ -399,44 +399,86 @@
         </div>
       </ion-accordion>
 
-      <ion-accordion value="first" color="transparent">
+      <!-- Gestion des Niveaux & Sections -->
+      <ion-accordion value="levels" color="transparent">
         <ion-item slot="header" color="teal">
-          <ion-label>Gestion des Niveaux & sections</ion-label>
+          <ion-label>Gestion des Niveaux & Sections</ion-label>
         </ion-item>
         <div class="ion-padding" slot="content">
           <ion-row>
-            <ion-col size="4">
-              <caption>
-                Niveaux
-              </caption>
-              <ion-card color="transparent">
-                <ul>
-                  <li></li>
-                </ul>
+            <ion-col size="6">
+              <h5>Niveaux existants</h5>
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-list>
+                  <ion-item *ngFor="let niveau of appGlobal.niveaux" color="transparent">
+                    <ion-label>
+                      <h3>{{ niveau.name }}</h3>
+                      <p>{{ niveau.Classes?.length || 0 }} classe(s)</p>
+                    </ion-label>
+                  </ion-item>
+                </ion-list>
               </ion-card>
             </ion-col>
-            <ion-col size="8"></ion-col>
+            <ion-col size="6">
+              <h5>Sections existantes</h5>
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-list>
+                  <ion-item *ngFor="let section of appGlobal.sections" color="transparent">
+                    <ion-label>
+                      <h3>{{ section.name }}</h3>
+                      <p>Slug: {{ section.slug }}</p>
+                    </ion-label>
+                  </ion-item>
+                </ion-list>
+              </ion-card>
+            </ion-col>
           </ion-row>
         </div>
       </ion-accordion>
 
-      <ion-accordion value="second" color="transparent">
+      <!-- Gestion des Classes -->
+      <ion-accordion value="classes" color="transparent">
         <ion-item slot="header" color="teal">
-          <ion-label>Gestion des classes</ion-label>
+          <ion-label>Gestion des Classes</ion-label>
         </ion-item>
-        <div class="ion-padding" slot="content">Second Content</div>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="12">
+              <h5>Classes par niveau</h5>
+              <ng-container *ngFor="let niveau of appGlobal.niveaux">
+                <ion-card color="lightgrey" class="radius-10 ion-margin-bottom">
+                  <ion-card-header>
+                    <ion-card-title>{{ niveau.name }}</ion-card-title>
+                  </ion-card-header>
+                  <ion-card-content>
+                    <ion-list>
+                      <ion-item *ngFor="let classe of niveau.Classes" color="transparent">
+                        <ion-label>
+                          <h3>{{ classe.name }}</h3>
+                          <p>Slug: {{ classe.name_slug }}</p>
+                          <p>Étudiants: {{ classe.Students?.length || 0 }}</p>
+                        </ion-label>
+                      </ion-item>
+                    </ion-list>
+                  </ion-card-content>
+                </ion-card>
+              </ng-container>
+            </ion-col>
+          </ion-row>
+        </div>
       </ion-accordion>
 
-      <ion-accordion value="third" color="transparent">
+      <!-- Gestion des Écoles -->
+      <ion-accordion value="schools" color="transparent">
         <ion-item slot="header" color="teal">
-          <ion-label>Gestion des écoles</ion-label>
+          <ion-label>Gestion des Écoles</ion-label>
         </ion-item>
         <div class="ion-padding" slot="content">
           <ion-row>
             <ion-col size="7">
               <h5>Toutes les écoles</h5>
               <ion-searchbar
-                placeholder="Filter schools"
+                placeholder="Rechercher une école"
                 (ionInput)="onSearchChange($event)"
                 [debounce]="250"
                 showCancelButton="never"
@@ -446,74 +488,492 @@
               </ion-searchbar>
 
               <ion-card class="radius-10 ion-padding">
-                <!-- If searching, display filtered list -->
                 <ng-container
                   *ngIf="
                     isSearching && filteredSchools.length > 0;
                     else noResults
                   "
                 >
-                  <div *ngFor="let item of filteredSchools">
-                    {{ item.name }}
-                    <!-- Assuming each school object has a 'name' property -->
-                  </div>
+                  <ion-list>
+                    <ion-item *ngFor="let school of filteredSchools" color="transparent">
+                      <ion-label>
+                        <h3>{{ school.name }}</h3>
+                        <p *ngIf="school.address">{{ school.address }}</p>
+                        <p *ngIf="school.province">Province: {{ school.province }}</p>
+                      </ion-label>
+                    </ion-item>
+                  </ion-list>
                 </ng-container>
 
-                <!-- If not searching, display full list -->
                 <ng-container *ngIf="!isSearching">
                   <ng-container *ngIf="appGlobal.schools">
-                    <div *ngFor="let item of appGlobal?.schools">
-                      {{ item.name }}
-                    </div>
+                    <ion-list>
+                      <ion-item *ngFor="let school of appGlobal.schools" color="transparent">
+                        <ion-label>
+                          <h3>{{ school.name }}</h3>
+                          <p *ngIf="school.address">{{ school.address }}</p>
+                          <p *ngIf="school.province">Province: {{ school.province }}</p>
+                        </ion-label>
+                      </ion-item>
+                    </ion-list>
                   </ng-container>
                 </ng-container>
 
-                <!-- Show no results message if search yields no results -->
                 <ng-template #noResults>
-                  <p>No results found</p>
+                  <p>Aucun résultat trouvé</p>
                 </ng-template>
               </ion-card>
             </ion-col>
             <ion-col size="5">
               <h5>Créer une école</h5>
               <ion-card color="lightgrey" class="radius-10">
-                <ion-item lines="none" color="transparent">
-                  <!-- <ion-label>Nom</ion-label> -->
-                  <ion-input placeholder="Nom"></ion-input>
-                </ion-item>
+                <ion-card-content>
+                  <ion-item lines="none" color="transparent">
+                    <ion-input placeholder="Nom de l'école" [(ngModel)]="newSchool.name"></ion-input>
+                  </ion-item>
 
-                <ion-item lines="none" color="transparent">
-                  <!-- <ion-label>Adresse</ion-label> -->
-                  <ion-input placeholder="Adresse"></ion-input>
-                </ion-item>
+                  <ion-item lines="none" color="transparent">
+                    <ion-input placeholder="Adresse" [(ngModel)]="newSchool.address"></ion-input>
+                  </ion-item>
 
-                <ion-item lines="none" color="transparent">
-                  <!-- <ion-label>Province</ion-label> -->
-                  <ion-input placeholder="Province"></ion-input>
-                </ion-item>
+                  <ion-item lines="none" color="transparent">
+                    <ion-input placeholder="Province" [(ngModel)]="newSchool.province"></ion-input>
+                  </ion-item>
 
-                <ion-item lines="none" color="transparent">
-                  <!-- <ion-label>Secteur</ion-label> -->
-                  <ion-input placeholder="Secteur"></ion-input>
-                </ion-item>
-                <br />
-                <ion-button
-                  color="teal"
-                  mode="ios"
-                  size="small"
-                  expand="block"
-                  fill="solid"
-                  expand="block"
-                  class="ion-margin-horizontal"
-                >
-                  Ajouter
-                </ion-button>
+                  <ion-item lines="none" color="transparent">
+                    <ion-input placeholder="Secteur" [(ngModel)]="newSchool.sector"></ion-input>
+                  </ion-item>
+                  <br />
+                  <ion-button
+                    color="teal"
+                    mode="ios"
+                    size="small"
+                    expand="block"
+                    fill="solid"
+                    class="ion-margin-horizontal"
+                    (click)="createSchool()"
+                    [disabled]="!newSchool.name"
+                  >
+                    Ajouter École
+                  </ion-button>
+                </ion-card-content>
               </ion-card>
             </ion-col>
           </ion-row>
         </div>
       </ion-accordion>
-      <!--  -->
+
+      <!-- Configuration des Paiements -->
+      <ion-accordion value="payments" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Configuration des Paiements</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="12">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Paramètres de Paiement</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <ion-item color="transparent">
+                    <ion-label position="floating">Frais mensuel (XOF)</ion-label>
+                    <ion-input type="number" [(ngModel)]="paymentConfig.monthlyFee"></ion-input>
+                  </ion-item>
+
+                  <ion-item color="transparent">
+                    <ion-label position="floating">Devise</ion-label>
+                    <ion-input [(ngModel)]="paymentConfig.currency"></ion-input>
+                  </ion-item>
+
+                  <ion-item color="transparent">
+                    <ion-label position="floating">Pourcentage de frais (%)</ion-label>
+                    <ion-input type="number" [(ngModel)]="paymentConfig.feePercentage"></ion-input>
+                  </ion-item>
+
+                  <ion-button
+                    color="teal"
+                    expand="block"
+                    fill="solid"
+                    mode="ios"
+                    (click)="updatePaymentConfig()"
+                    class="ion-margin-top"
+                  >
+                    Mettre à jour la configuration
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
+  </ng-container>
+
+  <!-- ADMIN SETTINGS -->
+  <ng-container *ngIf="appGlobal.user?.role === 'admin'">
+    <h2>Administrateur</h2>
+
+    <ion-accordion-group color="transparent" expand="compact">
+      <!-- Gestion des Utilisateurs -->
+      <ion-accordion value="users" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Gestion des Utilisateurs</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="4">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Professeurs</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.usersByRoles?.teachers?.length || 0 }}</h2>
+                  <ion-button fill="clear" [routerLink]="['/app/all-teachers']">
+                    Voir tous
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+            <ion-col size="4">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Étudiants</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.usersByRoles?.students?.length || 0 }}</h2>
+                  <ion-button fill="clear" [routerLink]="['/app/all-students']">
+                    Voir tous
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+            <ion-col size="4">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Parents</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.usersByRoles?.parents?.length || 0 }}</h2>
+                  <ion-button fill="clear" [routerLink]="['/app/all-parents']">
+                    Voir tous
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
+
+      <!-- Statistiques -->
+      <ion-accordion value="stats" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Statistiques</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="6">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Leçons</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.lessons?.length || 0 }}</h2>
+                  <p>Total des leçons créées</p>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+            <ion-col size="6">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Classes</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.classes?.length || 0 }}</h2>
+                  <p>Total des classes</p>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
+  </ng-container>
+
+  <!-- TEACHER SETTINGS -->
+  <ng-container *ngIf="appGlobal.user?.role === 'teacher'">
+    <h2>Professeur</h2>
+
+    <ion-accordion-group color="transparent" expand="compact">
+      <!-- Profil -->
+      <ion-accordion value="profile" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Mon Profil</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-card color="lightgrey" class="radius-10">
+            <ion-card-content>
+              <ion-item color="transparent">
+                <ion-label position="floating">Nom complet</ion-label>
+                <ion-input [(ngModel)]="teacherProfile.names" readonly></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Email</ion-label>
+                <ion-input [(ngModel)]="teacherProfile.email" readonly></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Téléphone</ion-label>
+                <ion-input [(ngModel)]="teacherProfile.phone1"></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label>Classes assignées</ion-label>
+                <ion-note slot="end">
+                  {{ appGlobal.user?.teachers_classes?.length || 0 }} classe(s)
+                </ion-note>
+              </ion-item>
+
+              <ion-button
+                color="teal"
+                expand="block"
+                fill="solid"
+                mode="ios"
+                (click)="updateTeacherProfile()"
+                class="ion-margin-top"
+              >
+                Mettre à jour le profil
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-accordion>
+
+      <!-- Mes Statistiques -->
+      <ion-accordion value="teacher-stats" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Mes Statistiques</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="4">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Leçons</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.user?.lessons?.length || 0 }}</h2>
+                  <p>Leçons créées</p>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+            <ion-col size="4">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Quiz</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.totalQuizLength || 0 }}</h2>
+                  <p>Quiz créés</p>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+            <ion-col size="4">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Taux de réussite</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.user?.success_rate || 'N/A' }}%</h2>
+                  <p>Moyenne des étudiants</p>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
+  </ng-container>
+
+  <!-- PARENT SETTINGS -->
+  <ng-container *ngIf="appGlobal.user?.role === 'parent'">
+    <h2>Parent</h2>
+
+    <ion-accordion-group color="transparent" expand="compact">
+      <!-- Mon Profil -->
+      <ion-accordion value="parent-profile" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Mon Profil</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-card color="lightgrey" class="radius-10">
+            <ion-card-content>
+              <ion-item color="transparent">
+                <ion-label position="floating">Nom complet</ion-label>
+                <ion-input [(ngModel)]="parentProfile.names"></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Email</ion-label>
+                <ion-input [(ngModel)]="parentProfile.email" readonly></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Téléphone principal</ion-label>
+                <ion-input [(ngModel)]="parentProfile.phone1"></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Téléphone secondaire</ion-label>
+                <ion-input [(ngModel)]="parentProfile.phone2"></ion-input>
+              </ion-item>
+
+              <ion-button
+                color="teal"
+                expand="block"
+                fill="solid"
+                mode="ios"
+                (click)="updateParentProfile()"
+                class="ion-margin-top"
+              >
+                Mettre à jour le profil
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-accordion>
+
+      <!-- Mes Enfants -->
+      <ion-accordion value="children" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Mes Enfants</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-card color="lightgrey" class="radius-10">
+            <ion-card-content>
+              <p>Informations sur vos enfants inscrits</p>
+              <!-- This would be populated with actual children data -->
+              <ion-button
+                color="teal"
+                fill="outline"
+                [routerLink]="['/app/parent-payment']"
+              >
+                Gérer les paiements
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
+  </ng-container>
+
+  <!-- STUDENT SETTINGS -->
+  <ng-container *ngIf="appGlobal.user?.role === 'student'">
+    <h2>Étudiant</h2>
+
+    <ion-accordion-group color="transparent" expand="compact">
+      <!-- Mon Profil -->
+      <ion-accordion value="student-profile" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Mon Profil</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-card color="lightgrey" class="radius-10">
+            <ion-card-content>
+              <ion-item color="transparent">
+                <ion-label position="floating">Pseudo</ion-label>
+                <ion-input [(ngModel)]="studentProfile.pseudo"></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Nom</ion-label>
+                <ion-input [(ngModel)]="studentProfile.nom" readonly></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label position="floating">Post-nom</ion-label>
+                <ion-input [(ngModel)]="studentProfile.post_nom" readonly></ion-input>
+              </ion-item>
+
+              <ion-item color="transparent">
+                <ion-label>Classe</ion-label>
+                <ion-note slot="end">{{ studentProfile.classe }}</ion-note>
+              </ion-item>
+
+              <ion-button
+                color="teal"
+                expand="block"
+                fill="solid"
+                mode="ios"
+                (click)="updateStudentProfile()"
+                class="ion-margin-top"
+              >
+                Mettre à jour le profil
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-accordion>
+
+      <!-- Mes Performances -->
+      <ion-accordion value="student-performance" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Mes Performances</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-card color="lightgrey" class="radius-10">
+            <ion-card-content>
+              <p>Vos statistiques de performance seront affichées ici</p>
+              <!-- This would show student's quiz scores, lesson completion, etc. -->
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
+  </ng-container>
+
+  <!-- INSPECTOR SETTINGS -->
+  <ng-container *ngIf="appGlobal.user?.role === 'inspector'">
+    <h2>Inspecteur</h2>
+
+    <ion-accordion-group color="transparent" expand="compact">
+      <!-- Supervision -->
+      <ion-accordion value="supervision" color="transparent">
+        <ion-item slot="header" color="teal">
+          <ion-label>Supervision</ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content">
+          <ion-row>
+            <ion-col size="6">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Professeurs supervisés</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <h2>{{ appGlobal.usersByRoles?.teachers?.length || 0 }}</h2>
+                  <ion-button fill="clear" [routerLink]="['/app/all-teachers']">
+                    Voir tous
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+            <ion-col size="6">
+              <ion-card color="lightgrey" class="radius-10">
+                <ion-card-header>
+                  <ion-card-title>Rapports</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <p>Générer des rapports de supervision</p>
+                  <ion-button color="teal" fill="outline">
+                    Nouveau rapport
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </div>
+      </ion-accordion>
     </ion-accordion-group>
   </ng-container>
 </ion-content>
