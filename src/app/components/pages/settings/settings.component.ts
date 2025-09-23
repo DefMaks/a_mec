@@ -78,7 +78,8 @@ export class SettingsComponent implements OnInit {
     pseudo: '',
     phone: '',
     phone2: '',
-    phone1: ''
+    phone1: '',
+    email: ''
   };
 
   parentProfile = {
@@ -88,7 +89,8 @@ export class SettingsComponent implements OnInit {
     pseudo: '',
     phone: '',
     phone2: '',
-    phone1: ''
+    phone1: '',
+    email: ''
   };
 
   studentProfile = {
@@ -116,12 +118,14 @@ export class SettingsComponent implements OnInit {
       this.teacherProfile = { 
         ...this.appGlobal.user,
         names: this.appGlobal.user.names || '',
-        phone1: this.appGlobal.user.phone || ''
+        phone1: this.appGlobal.user.phone || '',
+        email: this.appGlobal.user.email || ''
       };
       this.parentProfile = { 
         ...this.appGlobal.user,
         names: this.appGlobal.user.names || '',
-        phone1: this.appGlobal.user.phone || ''
+        phone1: this.appGlobal.user.phone || '',
+        email: this.appGlobal.user.email || ''
       };
       this.studentProfile = { 
         ...this.appGlobal.user,

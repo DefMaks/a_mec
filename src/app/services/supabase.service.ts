@@ -600,24 +600,26 @@ export class SupabaseService implements OnDestroy {
           // Load sections and options
           return Promise.all([
             this.supabase.from('Filieres').select('*'),
-            this.supabase.from('Options_filieres').select('*').then(result => {
-              // Handle case where table doesn't exist
-              if (result.error && result.error.code === '42P01') {
-                console.warn('Options_filieres table does not exist');
-                return { data: [], error: null };
-              }
-              return result;
-            })
+            this.supabase.from('Options_filieres').select('*')
           ]).then(([sectionsResult, optionsResult]) => {
-            if (sectionsResult.data) {
+            if (sectionsResult.data && !sectionsResult.error) {
               this.appGlobal.sections = sectionsResult.data;
+            } else if (sectionsResult.error && sectionsResult.error.code === '42P01') {
+              console.warn('Filieres table does not exist');
+              this.appGlobal.sections = [];
             }
-            if (optionsResult.data) {
+            
+            if (optionsResult.data && !optionsResult.error) {
               this.appGlobal.sectionsOptions = optionsResult.data;
+            } else if (optionsResult.error && optionsResult.error.code === '42P01') {
+              console.warn('Options_filieres table does not exist');
+              this.appGlobal.sectionsOptions = [];
             }
             return this.appGlobal;
           }).catch(error => {
-            console.warn('Error loading sections/options:', error);
+            console.warn('Error loading sections/options, setting empty arrays:', error);
+            this.appGlobal.sections = [];
+            this.appGlobal.sectionsOptions = [];
             return this.appGlobal;
           });
         })
