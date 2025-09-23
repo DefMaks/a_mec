@@ -31,14 +31,31 @@ export class HomePage {
 
   async countQuiz() {
     try {
-      let quizCount = 0;
+      // Wait for user role to be available
+      await this.gf.waitForCondition(
+        () => this.appGlobal.user?.role,
+        15000 // 15 second timeout
+      );
 
-      // Check if user is super_admin or admin (data should be available now)
+      // Wait for lessons to be available for super_admin and admin
       if (
         this.appGlobal.user?.role === 'super_admin' ||
         this.appGlobal.user?.role === 'admin'
       ) {
-        // Calculate total quiz count (lessons should be available now)
+        await this.gf.waitForCondition(
+          () => this.appGlobal.lessons,
+          15000 // 15 second timeout
+        );
+      }
+
+      let quizCount = 0;
+
+      // Check if user is super_admin or admin
+      if (
+        this.appGlobal.user?.role === 'super_admin' ||
+        this.appGlobal.user?.role === 'admin'
+      ) {
+        // Calculate total quiz count
         quizCount = (this.appGlobal.lessons || []).reduce(
           (total: number, lesson: any) => total + (lesson.Quiz?.length || 0),
           0
