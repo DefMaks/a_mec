@@ -260,6 +260,7 @@ export class ParentPaymentComponent implements OnInit {
       };
 
       const { error } = await this.supabase.insertPaymentRecord(paymentRecord);
+      if (error) {
         console.error('Error saving payment record:', error);
       }
     } catch (error) {
