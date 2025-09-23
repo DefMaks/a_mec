@@ -136,11 +136,6 @@ export class SupabaseService implements OnDestroy {
           console.error('Error initializing queries:', error);
         }
       }, 500);
-          await this.initQueries();
-        } catch (error) {
-          console.error('Error initializing queries:', error);
-        }
-      }, 500);
       
       return this.appGlobal;
     } catch (error) {
@@ -157,12 +152,6 @@ export class SupabaseService implements OnDestroy {
       await this.getRoles();
       await this.getSubjects();
       await this.getSchools();
-      try {
-        await this.getClasses();
-        
-        if (
-          this.appGlobal.user.role == 'super_admin' ||
-          this.appGlobal.user.role == 'admin' ||
       // Execute all queries sequentially without delays
       try {
         await this.getClasses();
@@ -697,14 +686,7 @@ export class SupabaseService implements OnDestroy {
         // .eq('user_id', user.id)
         // .single()
         .then((result) => {
-          // console.log(result.data)
-            }
-            )
-        }
-        )
-    )
-  }
-};
+          // console.log(result.data);
           this.appGlobal.matiere = result.data;
           return this.appGlobal.matiere;
         })
@@ -794,10 +776,6 @@ export class SupabaseService implements OnDestroy {
             'messages',
             JSON.stringify(this.appGlobal.chatlog)
           );
-          // this.appGlobal.user.pop(matieres) = result.data;
-          return this.appGlobal;
-        })
-    );
           // this.appGlobal.user.pop(matieres) = result.data;
           return this.appGlobal;
         })
