@@ -54,13 +54,8 @@ export class SupabaseService implements OnDestroy {
   }
 
   get session() {
-    // this.supabase.auth.getSession().then(({ data }) => {
-    //   this._session = data.session;
-    // });
-    // return this._session;
-
     if (!this._session) {
-      const savedSession = localStorage.getItem('session');
+      const savedSession = localStorage.getItem('supabaseSession');
       this._session = savedSession ? JSON.parse(savedSession) : null;
     }
     return this._session;
@@ -93,10 +88,6 @@ export class SupabaseService implements OnDestroy {
   // AUTHENTICATION AREA
 
   async signIn(email: string, password: string) {
-    // OLD CODE
-    // return this.supabase.auth.signInWithPassword({ email, password });
-
-    // NEW CODE
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email,
       password,
@@ -104,14 +95,11 @@ export class SupabaseService implements OnDestroy {
 
     if (data.session) {
       this._session = data.session; // Save session
-      localStorage.setItem('supabaseSession', JSON.stringify(data.session)); // Optional: Persist session
     }
     return { data, error };
   }
 
   signOut() {
-    //
-    localStorage.removeItem('supabaseSession');
     return this.supabase.auth.signOut();
   }
   // AUTHENTICATION AREA

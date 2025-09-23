@@ -360,4 +360,11 @@ export class ParentPaymentComponent implements OnInit {
         return 'medium';
     }
   }
+
+  /**
+   * Format currency display
+   */
+  formatCurrency(amount: number): string {
+    return `${amount.toLocaleString()} ${this.currency}`;
+  }
 }
