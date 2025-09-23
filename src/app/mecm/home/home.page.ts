@@ -34,7 +34,7 @@ export class HomePage {
       // Wait for user role to be available
       await this.gf.waitForCondition(
         () => this.appGlobal.user?.role,
-        15000 // 15 second timeout
+        30000 // 30 second timeout
       );
 
       // Wait for lessons to be available for super_admin and admin
@@ -44,7 +44,7 @@ export class HomePage {
       ) {
         await this.gf.waitForCondition(
           () => this.appGlobal.lessons,
-          15000 // 15 second timeout
+          30000 // 30 second timeout
         );
       }
 
