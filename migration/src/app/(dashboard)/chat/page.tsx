@@ -28,7 +28,7 @@ export default function ChatLogPage() {
           <span>💬</span> Messagerie & Journal des Conversations (ChatLog)
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Espace d échange direct en temps réel avec les enseignants, élèves et parents d élèves.
+          Espace d échange pédagogique direct en temps réel entre enseignants, élèves et administrateurs d écoles.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export default function ChatLogPage() {
         {/* Threads Sidebar */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-full">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 mb-3">
-            Canaux & Discussions
+            Canaux Éducatifs
           </div>
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {isLoadingThreads ? (
@@ -80,7 +80,7 @@ export default function ChatLogPage() {
                 <div>
                   <h3 className="font-bold text-white text-base">{activeThread.title}</h3>
                   <p className="text-xs text-slate-400">
-                    Canal : {activeThread.category} • {activeThread.participant_count} membres connectés
+                    Canal : {activeThread.category} • {activeThread.participant_count} participants
                   </p>
                 </div>
                 <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full font-medium">

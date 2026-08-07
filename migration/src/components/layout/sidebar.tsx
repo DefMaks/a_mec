@@ -16,6 +16,7 @@ export function Sidebar({ userRole = 'admin' }: SidebarProps) {
     { label: 'Écoles', href: '/admin/schools', icon: '🏫' },
     { label: 'Enseignants', href: '/admin/teachers', icon: '👨‍🏫' },
     { label: 'Élèves & Classes', href: '/admin/students', icon: '🎓' },
+    { label: 'Parents', href: '/admin/parents', icon: '👨‍👩‍👧' },
     { label: 'Paiements Twiga', href: '/admin/payments', icon: '💳' },
     { label: 'Mes Cours & Chapitres', href: '/teacher/courses', icon: '📚' },
     { label: 'Quizzes (10 Qs)', href: '/teacher/quizzes', icon: '📝' },

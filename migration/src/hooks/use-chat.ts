@@ -7,7 +7,7 @@ export interface ChatMessage {
   chat_id: string;
   sender_id: string;
   sender_name: string;
-  sender_role: 'admin' | 'teacher' | 'student' | 'parent';
+  sender_role: 'admin' | 'teacher' | 'student';
   content: string;
   created_at: string;
 }
@@ -15,7 +15,7 @@ export interface ChatMessage {
 export interface ChatThread {
   id: string;
   title: string;
-  category: 'Classe' | 'Matière' | 'Support_Ecole' | 'Parent_Enseignant';
+  category: 'Classe' | 'Matière' | 'Support_Ecole';
   participant_count: number;
   last_message?: string;
   last_activity: string;
@@ -51,14 +51,6 @@ export function useChatThreads() {
             last_message: 'Les fiches d inscription TENAFEP ont été validées par le Préfet.',
             last_activity: new Date(Date.now() - 3600000).toISOString(),
           },
-          {
-            id: 'th-3',
-            title: 'Suivi Parent/Enseignant - Élève Mbuyi Jean',
-            category: 'Parent_Enseignant',
-            participant_count: 3,
-            last_message: 'Paiement Twiga confirmé pour le deuxième trimestre.',
-            last_activity: new Date(Date.now() - 86400000).toISOString(),
-          },
         ];
       }
 
@@ -78,7 +70,6 @@ export function useChatMessages(threadId: string) {
   const queryClient = useQueryClient();
   const supabase = getSupabaseBrowserClient();
 
-  // Supabase Realtime Subscription for live updates
   useEffect(() => {
     if (!threadId) return;
 
@@ -87,7 +78,7 @@ export function useChatMessages(threadId: string) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `chat_id=eq.${threadId}` },
-        (payload) => {
+        () => {
           queryClient.invalidateQueries({ queryKey: ['chat-messages', threadId] });
         }
       )
