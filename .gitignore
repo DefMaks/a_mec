@@ -69,3 +69,9 @@ testem.log
 .DS_Store
 Thumbs.db
 .env
+
+# Next.js
+.next/
+.next
+out/
+build/
