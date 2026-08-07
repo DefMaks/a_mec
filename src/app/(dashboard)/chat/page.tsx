@@ -1,21 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useChatThreads, useChatMessages } from '@/hooks/use-chat';
 
 export default function ChatLogPage() {
   const { data: threads, isLoading: isLoadingThreads } = useChatThreads();
-  const [selectedThreadId, setSelectedThreadId] = useState<string>('th-1');
-
+  const [selectedThreadId, setSelectedThreadId] = useState<string>('');
   const { data: messages, sendMessage, isSending } = useChatMessages(selectedThreadId);
   const [inputText, setInputText] = useState('');
+
+  useEffect(() => {
+    if (threads && threads.length > 0 && !selectedThreadId) {
+      setSelectedThreadId(threads[0].id);
+    }
+  }, [threads, selectedThreadId]);
 
   const activeThread = (threads || []).find((t) => t.id === selectedThreadId) || threads?.[0];
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-
+    if (!inputText.trim() || !selectedThreadId) return;
     await sendMessage(inputText);
     setInputText('');
   };
@@ -41,8 +45,8 @@ export default function ChatLogPage() {
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {isLoadingThreads ? (
               <div className="text-xs text-slate-500 p-4">Chargement des canaux...</div>
-            ) : (
-              threads?.map((thread) => {
+            ) : threads && threads.length > 0 ? (
+              threads.map((thread) => {
                 const isSelected = thread.id === selectedThreadId;
                 return (
                   <button
@@ -62,11 +66,15 @@ export default function ChatLogPage() {
                     </div>
                     <div className="font-bold text-sm truncate">{thread.title}</div>
                     <div className="text-xs text-slate-400 truncate mt-1">
-                      {thread.last_message}
+                      {thread.last_message || 'Pas de message'}
                     </div>
                   </button>
                 );
               })
+            ) : (
+              <div className="text-xs text-slate-500 p-4 text-center">
+                Aucun canal de discussion trouvé dans la base de données.
+              </div>
             )}
           </div>
         </div>
@@ -121,6 +129,11 @@ export default function ChatLogPage() {
                     </div>
                   );
                 })}
+                {(!messages || messages.length === 0) && (
+                  <div className="flex-1 flex items-center justify-center text-slate-500 text-xs py-12">
+                    Aucun message dans ce canal.
+                  </div>
+                )}
               </div>
 
               {/* Input Form */}

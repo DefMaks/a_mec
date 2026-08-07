@@ -53,29 +53,8 @@ export function useCourses(isSuperAdmin: boolean = false) {
       const { data, error } = await query;
 
       if (error) {
-        console.warn('Fallback local courses:', error.message);
-        return [
-          {
-            id: 'c-101',
-            titre: 'Analyse Mathématique - Fonctions Dérivables & Intégrales',
-            description: 'Programme officiel EXETAT RDC pour les sections scientifiques.',
-            matiere_nom: 'Mathématiques',
-            classe: '6ème Math-Physique',
-            ecole_id: DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661',
-            chapitres_count: 5,
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'c-102',
-            titre: 'Physique Quantique & Optique Géométrique',
-            description: 'Optique, réfraction et lois de Snell-Descartes.',
-            matiere_nom: 'Physique',
-            classe: '6ème Math-Physique',
-            ecole_id: DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661',
-            chapitres_count: 3,
-            created_at: new Date().toISOString(),
-          },
-        ];
+        console.error('Error fetching courses from Supabase:', error.message);
+        return [];
       }
 
       return (data || []).map((item: any) => ({
@@ -83,8 +62,8 @@ export function useCourses(isSuperAdmin: boolean = false) {
         titre: item.titre,
         description: item.description,
         matiere_id: item.matieres?.id,
-        matiere_nom: item.matieres?.nom || 'Général',
-        classe: item.classe || 'Toutes',
+        matiere_nom: item.matieres?.nom || '',
+        classe: item.classe || '',
         chapitres_count: item.chapitres?.length || 0,
         created_at: item.created_at,
       }));
@@ -104,7 +83,7 @@ export function useCreateCourse() {
       matiere_id?: string;
       ecole_id?: string;
     }) => {
-      const targetSchoolId = courseData.ecole_id || DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661';
+      const targetSchoolId = courseData.ecole_id || DEFAULT_SCHOOL_ID;
       const { data, error } = await supabase
         .from('cours')
         .insert([

@@ -54,7 +54,7 @@ export default function DashboardOverviewPage() {
             <span className="text-2xl">🏫</span>
           </div>
           <div className="text-3xl font-extrabold text-white mt-3">
-            {schools?.length || 1}
+            {schools?.length || 0}
           </div>
           <div className="text-xs text-teal-400 font-medium mt-1">
             {DEFAULT_SCHOOL_ID ? `${APP_NAME} (Restreint)` : 'Toutes les écoles'}
@@ -110,7 +110,7 @@ export default function DashboardOverviewPage() {
                 <span>📚</span> Espace Pédagogique Enseignant
               </h2>
               <p className="text-xs text-slate-400">
-                Cours publiables & Quizzes EXETAT de 10 questions
+                Cours publiables & Quizzes EXETAT
               </p>
             </div>
             <Link
@@ -129,7 +129,7 @@ export default function DashboardOverviewPage() {
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
               <div className="text-xs text-slate-400 font-medium">Quizzes Standardisés</div>
               <div className="text-2xl font-bold text-white mt-1">{quizzes?.length || 0}</div>
-              <p className="text-[11px] text-teal-400 mt-1">10 Questions par quiz</p>
+              <p className="text-[11px] text-teal-400 mt-1">Quizzes dans la base de données</p>
             </div>
           </div>
         </div>
@@ -152,10 +152,10 @@ export default function DashboardOverviewPage() {
           <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-200">Canal {APP_SHORT_NAME} :</span>
-              <span className="text-emerald-400 font-medium">● En ligne (Supabase)</span>
+              <span className="text-emerald-400 font-medium">● Connecté (Supabase Realtime)</span>
             </div>
             <p className="text-xs text-slate-400 italic">
-              &quot;Espace d échange des enseignants et de l administration de {APP_NAME}.&quot;
+              Espace d échange en direct alimenté exclusivement par Supabase.
             </p>
           </div>
         </div>

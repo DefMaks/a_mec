@@ -33,33 +33,16 @@ export function useChatThreads() {
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.warn('Fallback chat threads:', error.message);
-        return [
-          {
-            id: 'th-1',
-            title: '6ème Math-Physique - Groupe d Échange',
-            category: 'Classe',
-            participant_count: 32,
-            last_message: 'M. le Professeur, quand sera publié le corrigé du Quiz #3 ?',
-            last_activity: new Date().toISOString(),
-          },
-          {
-            id: 'th-2',
-            title: 'Coordination Pédagogique - Révision EXETAT',
-            category: 'Support_Ecole',
-            participant_count: 12,
-            last_message: 'Les fiches d inscription TENAFEP ont été validées par le Préfet.',
-            last_activity: new Date(Date.now() - 3600000).toISOString(),
-          },
-        ];
+        console.error('Error fetching chat threads from Supabase:', error.message);
+        return [];
       }
 
       return (data || []).map((t: any) => ({
         id: t.id,
         title: t.titre || 'Canal de discussion',
         category: t.categorie || 'Classe',
-        participant_count: t.participants_count || 10,
-        last_message: t.dernier_message || 'Pas encore de message',
+        participant_count: t.participants_count || 0,
+        last_message: t.dernier_message || '',
         last_activity: t.updated_at || t.created_at,
       }));
     },
@@ -101,36 +84,8 @@ export function useChatMessages(threadId: string) {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.warn('Fallback chat messages:', error.message);
-        return [
-          {
-            id: 'm-1',
-            chat_id: threadId,
-            sender_id: 'usr-1',
-            sender_name: 'Prof. Kalala Jean',
-            sender_role: 'teacher',
-            content: 'Bonjour chers élèves, les exercices sur les logarithmes sont disponibles sur le portail E-RDC.',
-            created_at: new Date(Date.now() - 7200000).toISOString(),
-          },
-          {
-            id: 'm-2',
-            chat_id: threadId,
-            sender_id: 'usr-2',
-            sender_name: 'Mutombo Patrick (Élève)',
-            sender_role: 'student',
-            content: 'Merci Monsieur le Professeur ! Le quiz contient bien 10 questions chronométrées ?',
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-          },
-          {
-            id: 'm-3',
-            chat_id: threadId,
-            sender_id: 'usr-1',
-            sender_name: 'Prof. Kalala Jean',
-            sender_role: 'teacher',
-            content: 'Oui exactement, 10 questions de préparation EXETAT à valider en 30 minutes.',
-            created_at: new Date(Date.now() - 1800000).toISOString(),
-          },
-        ];
+        console.error('Error fetching chat messages from Supabase:', error.message);
+        return [];
       }
 
       return data || [];
@@ -155,13 +110,9 @@ export function useChatMessages(threadId: string) {
         .single();
 
       if (error) {
-        console.warn('Simulated send message:', error.message);
-        return {
-          id: `m-${Date.now()}`,
-          ...newMessage,
-          created_at: new Date().toISOString(),
-        };
+        throw new Error(error.message);
       }
+
       return data;
     },
     onSuccess: (data) => {

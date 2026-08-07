@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { DEFAULT_SCHOOL_ID, APP_NAME, APP_SHORT_NAME } from '@/lib/config';
+import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
 export interface ParentItem {
   id: string;
@@ -42,50 +42,23 @@ export function useParents(isSuperAdmin: boolean = false) {
       const { data, error } = await query;
 
       if (error) {
-        console.warn('Fallback local parents:', error.message);
-        const schoolName = `${APP_NAME} (${APP_SHORT_NAME})`;
-        return [
-          {
-            id: 'par-1',
-            nom_complet: 'Mbuyi Kalala Alphonse',
-            telephone: '+243812345678',
-            email: 'alphonse.mbuyi@gmail.com',
-            commune_ville: 'Limete, Kinshasa',
-            statut_abonnement: 'ACTIF',
-            created_at: new Date().toISOString(),
-            eleves_lies: [
-              { id: 'el-101', nom_complet: 'Mbuyi Jean', classe: '6ème Math-Physique', ecole_nom: schoolName },
-              { id: 'el-102', nom_complet: 'Mbuyi Marie', classe: '4ème Littéraire', ecole_nom: schoolName },
-            ],
-          },
-          {
-            id: 'par-2',
-            nom_complet: 'Tshilombo Marie-Jeanne',
-            telephone: '+243998765432',
-            email: 'mj.tshilombo@yahoo.fr',
-            commune_ville: 'Gombe, Kinshasa',
-            statut_abonnement: 'EN_ATTENTE',
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            eleves_lies: [
-              { id: 'el-201', nom_complet: 'Tshilombo David', classe: '8ème EB', ecole_nom: schoolName },
-            ],
-          },
-        ];
+        console.error('Error fetching parents from Supabase:', error.message);
+        return [];
       }
 
       return (data || []).map((p: any) => ({
         id: p.id,
-        nom_complet: p.nom_complet || 'Parent sans nom',
-        telephone: p.telephone || 'N/A',
+        nom_complet: p.nom_complet || '',
+        telephone: p.telephone || '',
         email: p.email,
-        commune_ville: p.commune_ville || 'Kinshasa, RDC',
+        commune_ville: p.commune_ville || '',
         statut_abonnement: p.statut_abonnement || 'EN_ATTENTE',
         created_at: p.created_at,
         eleves_lies: (p.parent_eleves || []).map((pe: any) => ({
-          id: pe.eleves?.id || 'el-unk',
-          nom_complet: pe.eleves?.nom_complet || 'Élève',
-          classe: pe.eleves?.classe || 'Inconnue',
-          ecole_nom: pe.eleves?.ecoles?.nom || schoolName,
+          id: pe.eleves?.id || '',
+          nom_complet: pe.eleves?.nom_complet || '',
+          classe: pe.eleves?.classe || '',
+          ecole_nom: pe.eleves?.ecoles?.nom || '',
         })),
       }));
     },
