@@ -1,7 +1,7 @@
 // src/app/(dashboard)/teacher/chapters/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export interface ChapterDetail {
     cours_titre?: string;
 }
 
-export default function ChaptersPage() {
+function ChaptersListContent() {
     const searchParams = useSearchParams();
     const filterCoursId = searchParams.get('cours_id');
     const supabase = getSupabaseBrowserClient();
@@ -161,5 +161,19 @@ export default function ChaptersPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function ChaptersPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
+                    Chargement de l&apos;espace leçons...
+                </div>
+            }
+        >
+            <ChaptersListContent />
+        </Suspense>
     );
 }
