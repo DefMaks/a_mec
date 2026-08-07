@@ -91,3 +91,39 @@ export function useCourses(isSuperAdmin: boolean = false) {
     },
   });
 }
+
+export function useCreateCourse() {
+  const queryClient = useQueryClient();
+  const supabase = getSupabaseBrowserClient();
+
+  return useMutation({
+    mutationFn: async (courseData: {
+      titre: string;
+      description?: string;
+      classe?: string;
+      matiere_id?: string;
+      ecole_id?: string;
+    }) => {
+      const targetSchoolId = courseData.ecole_id || DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661';
+      const { data, error } = await supabase
+        .from('cours')
+        .insert([
+          {
+            titre: courseData.titre,
+            description: courseData.description,
+            classe: courseData.classe,
+            matiere_id: courseData.matiere_id,
+            ecole_id: targetSchoolId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}

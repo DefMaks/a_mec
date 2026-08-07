@@ -57,3 +57,38 @@ export function useTeachers(filters?: { search?: string; activeOnly?: boolean },
     staleTime: 1000 * 60 * 5,
   });
 }
+
+export function useCreateTeacher() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async (teacherData: {
+      nom_complet: string;
+      email: string;
+      telephone?: string;
+      ecole_id?: string;
+    }) => {
+      const targetSchoolId = teacherData.ecole_id || DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661';
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            nom_complet: teacherData.nom_complet,
+            email: teacherData.email,
+            telephone: teacherData.telephone,
+            ecole_id: targetSchoolId,
+            role: 'teacher',
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+    },
+  });
+}

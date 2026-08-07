@@ -33,3 +33,25 @@ export function usePayments(statusFilter?: string, isSuperAdmin: boolean = false
     },
   });
 }
+
+export function useUpdatePaymentStatus() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async ({ id, statut }: { id: string; statut: 'VALIDE' | 'REJETE' | 'EN_ATTENTE' }) => {
+      const { data, error } = await supabase
+        .from('paiements')
+        .update({ statut })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+    },
+  });
+}

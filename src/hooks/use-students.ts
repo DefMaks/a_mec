@@ -50,3 +50,37 @@ export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
     },
   });
 }
+
+export function useCreateStudent() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async (studentData: {
+      nom_complet: string;
+      matricule?: string;
+      classe_id?: string;
+      ecole_id?: string;
+    }) => {
+      const targetSchoolId = studentData.ecole_id || DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661';
+      const { data, error } = await supabase
+        .from('eleves')
+        .insert([
+          {
+            nom_complet: studentData.nom_complet,
+            matricule: studentData.matricule || `ADS-${Date.now().toString().slice(-4)}`,
+            classe_id: studentData.classe_id,
+            ecole_id: targetSchoolId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+  });
+}
