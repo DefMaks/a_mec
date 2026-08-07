@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -17,16 +17,11 @@ export function Sidebar({ userRole = 'admin' }: SidebarProps) {
     { label: 'Enseignants', href: '/admin/teachers', icon: '👨‍🏫' },
     { label: 'Élèves & Classes', href: '/admin/students', icon: '🎓' },
     { label: 'Paiements Twiga', href: '/admin/payments', icon: '💳' },
-  ];
-
-  const teacherNavItems = [
-    { label: "Vue d'ensemble", href: '/', icon: '📊' },
     { label: 'Mes Cours & Chapitres', href: '/teacher/courses', icon: '📚' },
-    { label: 'Quizzes EXETAT/TENAFEP', href: '/teacher/quizzes', icon: '📝' },
+    { label: 'Quizzes (10 Qs)', href: '/teacher/quizzes', icon: '📝' },
     { label: 'Messagerie Chat', href: '/chat', icon: '💬' },
+    { label: 'Paramètres', href: '/settings', icon: '⚙️' },
   ];
-
-  const navItems = userRole === 'teacher' ? teacherNavItems : adminNavItems;
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800">
@@ -44,7 +39,7 @@ export function Sidebar({ userRole = 'admin' }: SidebarProps) {
         <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">
           Navigation Principale
         </div>
-        {navItems.map((item) => {
+        {adminNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
