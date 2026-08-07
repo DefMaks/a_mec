@@ -1,12 +1,12 @@
 // src/app/(dashboard)/teacher/chapters/new/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCreateChapter } from '@/hooks/use-chapters';
 import { TiptapEditor } from '@/components/ui/tiptap-editor';
 
-export default function NewChapterPage() {
+function NewChapterFormContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const coursId = searchParams.get('cours_id');
@@ -39,7 +39,7 @@ export default function NewChapterPage() {
                 ordre,
                 contenu_html: contenuHtml,
             });
-            router.push('/teacher/courses');
+            router.push(`/teacher/courses/${coursId}`);
         } catch (err: any) {
             setFormError(err?.message || 'Erreur lors de la création de la leçon.');
         }
@@ -128,5 +128,19 @@ export default function NewChapterPage() {
                 </div>
             </form>
         </div>
+    );
+}
+
+export default function NewChapterPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
+                    Chargement du formulaire de création...
+                </div>
+            }
+        >
+            <NewChapterFormContent />
+        </Suspense>
     );
 }
