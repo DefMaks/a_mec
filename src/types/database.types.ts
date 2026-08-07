@@ -3,7 +3,7 @@
  * Respecte scrupuleusement la structure actuelle de la base de données sans modification de schéma.
  */
 
-export type UserRole = 'super_admin' | 'admin' | 'teacher' | 'parent';
+export type UserRole = 'super_admin' | 'admin' | 'teacher' | 'parent' | 'student';
 
 export interface Profile {
   id: string;
