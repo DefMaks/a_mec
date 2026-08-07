@@ -1,3 +1,4 @@
+// src/hooks/use-courses.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
@@ -9,22 +10,8 @@ export interface CourseItem {
   matiere_id?: string;
   matiere_nom?: string;
   classe?: string;
-  enseignant_id?: string;
-  ecole_id?: string;
   created_at?: string;
   chapitres_count?: number;
-}
-
-export interface ChapterItem {
-  id: string;
-  cours_id: string;
-  titre: string;
-  ordre: number;
-  contenu?: string;
-  audio_url?: string;
-  video_url?: string;
-  pdf_url?: string;
-  created_at?: string;
 }
 
 export function useCourses(isSuperAdmin: boolean = false) {
@@ -38,17 +25,11 @@ export function useCourses(isSuperAdmin: boolean = false) {
         .select(`
           id,
           titre,
-          description,
-          classe,
           created_at,
-          matieres ( id, nom ),
+          matiere:matiere_id ( id, nom ),
           chapitres ( id )
         `)
         .order('created_at', { ascending: false });
-
-      if (DEFAULT_SCHOOL_ID && !isSuperAdmin) {
-        query = query.eq('ecole_id', DEFAULT_SCHOOL_ID);
-      }
 
       const { data, error } = await query;
 
@@ -60,14 +41,49 @@ export function useCourses(isSuperAdmin: boolean = false) {
       return (data || []).map((item: any) => ({
         id: item.id,
         titre: item.titre,
-        description: item.description,
-        matiere_id: item.matieres?.id,
-        matiere_nom: item.matieres?.nom || '',
-        classe: item.classe || '',
+        matiere_id: item.matiere?.id,
+        matiere_nom: item.matiere?.nom || '',
         chapitres_count: item.chapitres?.length || 0,
         created_at: item.created_at,
       }));
     },
+  });
+}
+
+export function useCourse(id: string) {
+  const supabase = getSupabaseBrowserClient();
+
+  return useQuery({
+    queryKey: ['course', id],
+    queryFn: async (): Promise<CourseItem | null> => {
+      if (!id) return null;
+
+      const { data, error } = await supabase
+        .from('cours')
+        .select(`
+          id,
+          titre,
+          matiere_id,
+          created_at,
+          matiere:matiere_id ( id, nom )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching course:', error.message);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        titre: data.titre,
+        matiere_id: data.matiere_id,
+        matiere_nom: (data.matiere as any)?.nom || '',
+        created_at: data.created_at,
+      };
+    },
+    enabled: !!id,
   });
 }
 
@@ -81,18 +97,13 @@ export function useCreateCourse() {
       description?: string;
       classe?: string;
       matiere_id?: string;
-      ecole_id?: string;
     }) => {
-      const targetSchoolId = courseData.ecole_id || DEFAULT_SCHOOL_ID;
       const { data, error } = await supabase
         .from('cours')
         .insert([
           {
             titre: courseData.titre,
-            description: courseData.description,
-            classe: courseData.classe,
             matiere_id: courseData.matiere_id,
-            ecole_id: targetSchoolId,
           },
         ])
         .select()
@@ -103,6 +114,36 @@ export function useCreateCourse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}
+
+export function useUpdateCourse() {
+  const queryClient = useQueryClient();
+  const supabase = getSupabaseBrowserClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      titre: string;
+      matiere_id?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('cours')
+        .update({
+          titre: payload.titre,
+          matiere_id: payload.matiere_id,
+        })
+        .eq('id', payload.id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', variables.id] });
     },
   });
 }

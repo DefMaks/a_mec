@@ -1,8 +1,10 @@
+// src/app/(dashboard)/teacher/quizzes/new/page.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateQuiz, QuizQuestion } from '@/hooks/use-quizzes';
+import { TiptapEditor } from '@/components/ui/tiptap-editor';
 
 // Helper to initialize 10 questions
 const createInitialTenQuestions = (): QuizQuestion[] => {
@@ -57,7 +59,10 @@ export default function NewQuizPage() {
     // Validate that all 10 questions have at least a statement and 4 options
     for (let i = 0; i < 10; i++) {
       const q = questions[i];
-      if (!q.question.trim() || !q.optionA.trim() || !q.optionB.trim()) {
+      // Clean HTML tags to verify if the question has real text
+      const cleanQuestionText = q.question.replace(/<[^>]*>/g, '').trim();
+
+      if (!cleanQuestionText || !q.optionA.trim() || !q.optionB.trim()) {
         setFormError(`La Question #${i + 1} est incomplète (intitulé ou options A/B manquants).`);
         setActiveQuestionIndex(i);
         return;
@@ -164,20 +169,20 @@ export default function NewQuizPage() {
           {/* Stepper Buttons 1 to 10 */}
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
             {questions.map((q, idx) => {
-              const isFilled = q.question.trim().length > 0 && q.optionA.trim().length > 0;
+              const cleanText = q.question.replace(/<[^>]*>/g, '').trim();
+              const isFilled = cleanText.length > 0 && q.optionA.trim().length > 0;
               const isActive = idx === activeQuestionIndex;
               return (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setActiveQuestionIndex(idx)}
-                  className={`py-2 rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5 border ${
-                    isActive
+                  className={`py-2 rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5 border ${isActive
                       ? 'bg-teal-500 text-slate-950 border-teal-400 shadow-lg'
                       : isFilled
-                      ? 'bg-slate-800 text-teal-300 border-teal-500/30'
-                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'
-                  }`}
+                        ? 'bg-slate-800 text-teal-300 border-teal-500/30'
+                        : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'
+                    }`}
                 >
                   <span>Q{idx + 1}</span>
                   <span className="text-[9px] opacity-75">{isFilled ? '✓' : '•'}</span>
@@ -187,17 +192,16 @@ export default function NewQuizPage() {
           </div>
 
           {/* Active Question Editor */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-teal-400 mb-1">
-                Intitulé de la Question #{activeQuestionIndex + 1}
+              <label className="block text-xs font-semibold text-teal-400 mb-2">
+                Intitulé de la Question #{activeQuestionIndex + 1} (Éditeur Tiptap)
               </label>
-              <textarea
-                rows={2}
+              <TiptapEditor
+                key={`q-${activeQuestionIndex}`}
+                content={activeQuestion.question}
+                onChange={(html) => handleUpdateQuestion('question', html)}
                 placeholder={`Ex: Formuler la propriété mathématique relative à la dérivée de la fonction ln(x) en x = ${activeQuestionIndex + 1}...`}
-                value={activeQuestion.question}
-                onChange={(e) => handleUpdateQuestion('question', e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
               />
             </div>
 
@@ -209,11 +213,10 @@ export default function NewQuizPage() {
                 return (
                   <div
                     key={optKey}
-                    className={`p-3 rounded-xl border transition ${
-                      isCorrect
+                    className={`p-3 rounded-xl border transition ${isCorrect
                         ? 'bg-emerald-500/10 border-emerald-500/40'
                         : 'bg-slate-900 border-slate-800'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-bold text-slate-300">Option {optKey}</span>
@@ -240,17 +243,16 @@ export default function NewQuizPage() {
               })}
             </div>
 
-            {/* Explanation */}
+            {/* Explanation with Rich Text Tiptap */}
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">
-                Explication / Corrigé détaillé (affiché après soumission)
+              <label className="block text-xs font-medium text-slate-400 mb-2">
+                Explication / Corrigé détaillé (Éditeur Tiptap)
               </label>
-              <input
-                type="text"
-                placeholder="Rappel théorique ou démarche de calcul..."
-                value={activeQuestion.explication || ''}
-                onChange={(e) => handleUpdateQuestion('explication', e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+              <TiptapEditor
+                key={`exp-${activeQuestionIndex}`}
+                content={activeQuestion.explication || ''}
+                onChange={(html) => handleUpdateQuestion('explication', html)}
+                placeholder="Rappel théorique, schéma ou démarche de calcul..."
               />
             </div>
           </div>

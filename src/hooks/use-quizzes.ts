@@ -1,3 +1,4 @@
+// src/hooks/use-quizzes.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -17,12 +18,11 @@ export interface QuizQuestion {
 export interface QuizItem {
   id: string;
   titre: string;
-  matiere_nom?: string;
   niveau?: string;
   classe?: string;
   total_questions: number;
   duree_minutes: number;
-  created_at: string;
+  created_at?: string;
   questions?: QuizQuestion[];
 }
 
@@ -37,52 +37,27 @@ export function useQuizzes() {
         .select(`
           id,
           titre,
-          niveau,
-          classe,
-          duree_minutes,
-          created_at,
-          quiz_questions (
-            id,
-            num_order,
-            question,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_option,
-            explication,
-            points
-          )
-        `)
-        .order('created_at', { ascending: false });
+          answers
+        `);
 
       if (error) {
         console.error('Error fetching quizzes from Supabase:', error.message);
         return [];
       }
 
-      return (data || []).map((q: any) => ({
-        id: q.id,
-        titre: q.titre,
-        matiere_nom: q.matiere_nom || '',
-        niveau: q.niveau || '',
-        classe: q.classe || '',
-        total_questions: q.quiz_questions?.length || 0,
-        duree_minutes: q.duree_minutes || 0,
-        created_at: q.created_at,
-        questions: (q.quiz_questions || []).map((item: any) => ({
-          id: item.id,
-          numOrder: item.num_order,
-          question: item.question,
-          optionA: item.option_a,
-          optionB: item.option_b,
-          optionC: item.option_c,
-          optionD: item.option_d,
-          correctOption: item.correct_option,
-          explication: item.explication,
-          points: item.points || 1,
-        })),
-      }));
+      return (data || []).map((q: any) => {
+        const questionsList: QuizQuestion[] = Array.isArray(q.answers) ? q.answers : [];
+        return {
+          id: q.id,
+          titre: q.titre || 'Quiz sans titre',
+          niveau: 'EXETAT',
+          classe: 'Général',
+          total_questions: questionsList.length,
+          duree_minutes: 30,
+          created_at: new Date().toISOString(),
+          questions: questionsList,
+        };
+      });
     },
   });
 }
@@ -103,45 +78,26 @@ export function useCreateQuiz() {
         throw new Error('Chaque quiz doit obligatoirement contenir exactement 10 questions.');
       }
 
-      const { data: quizData, error: quizError } = await supabase
+      // Stockage des 10 questions directement dans le champ JSONB "answers"
+      const { data, error } = await supabase
         .from('quiz')
-        .insert([{
-          titre: payload.titre,
-          classe: payload.classe,
-          niveau: payload.niveau,
-          duree_minutes: payload.duree_minutes,
-        }])
+        .insert([
+          {
+            titre: payload.titre,
+            answers: payload.questions,
+          },
+        ])
         .select()
         .single();
 
-      if (quizError) {
-        throw new Error(quizError.message);
-      }
-
-      const questionsToInsert = payload.questions.map((q) => ({
-        quiz_id: quizData.id,
-        num_order: q.numOrder,
-        question: q.question,
-        option_a: q.optionA,
-        option_b: q.optionB,
-        option_c: q.optionC,
-        option_d: q.optionD,
-        correct_option: q.correctOption,
-        explication: q.explication,
-        points: q.points || 1,
-      }));
-
-      const { error: questionsError } = await supabase.from('quiz_questions').insert(questionsToInsert);
-      if (questionsError) throw new Error(questionsError.message);
-
-      return quizData;
+      if (error) throw new Error(error.message);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quizzes'] });
     },
   });
 }
-
 
 export function useSaveQuizAttempt() {
   const queryClient = useQueryClient();
@@ -158,14 +114,14 @@ export function useSaveQuizAttempt() {
     }) => {
       const { data, error } = await supabase
         .from('quiz_attempts')
-        .insert([{
-          quiz_id: payload.quizId,
-          eleve_id: payload.eleveId || 'eleve-demo-id',
-          score: payload.score,
-          total_questions: payload.totalQuestions,
-          reponses: payload.reponses || {},
-          reussi: payload.reussi,
-        }])
+        .insert([
+          {
+            quiz_id: payload.quizId,
+            eleve_id: payload.eleveId,
+            score: payload.score,
+            duration_attemp: 30,
+          },
+        ])
         .select()
         .single();
 

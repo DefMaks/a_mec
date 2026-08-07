@@ -99,7 +99,10 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${isActive
+                  ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30'
+                  : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-transparent'
+                }`}
             >
               <span className="text-base">{item.icon}</span>
               <span className="truncate">{item.label}</span>

@@ -8,15 +8,28 @@ export const metadata: Metadata = {
   description: `Portail d Administration Éducative RDC - ${APP_NAME} (${APP_SHORT_NAME})`,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// export default function RootLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="fr" className="dark">
+//       <body className="bg-slate-950 text-slate-100 min-h-screen">
+//         <QueryProvider>{children}</QueryProvider>
+//       </body>
+//     </html>
+//   );
+// }
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen">
-        <QueryProvider>{children}</QueryProvider>
+      <body
+        className="bg-slate-950 text-slate-100 min-h-screen"
+        suppressHydrationWarning
+      >
+        {children}
       </body>
     </html>
   );

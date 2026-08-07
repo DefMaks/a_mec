@@ -1,3 +1,4 @@
+// src/hooks/use-parents.ts
 import { useQuery } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
@@ -5,11 +6,16 @@ import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 export interface ParentItem {
   id: string;
   nom_complet: string;
-  telephone: string;
+  telephone?: string;
   email?: string;
   commune_ville?: string;
   statut_abonnement: 'ACTIF' | 'EN_ATTENTE' | 'EXPIRER';
-  eleves_lies: { id: string; nom_complet: string; classe: string; ecole_nom: string }[];
+  profile_status: boolean;
+  eleves_lies: {
+    id: string;
+    pseudonyme: string;
+    classe_id?: string;
+  }[];
   created_at: string;
 }
 
@@ -20,23 +26,32 @@ export function useParents(isSuperAdmin: boolean = false) {
     queryKey: ['parents', isSuperAdmin, DEFAULT_SCHOOL_ID],
     queryFn: async (): Promise<ParentItem[]> => {
       let query = supabase
-        .from('parents')
+        .from('profiles')
         .select(`
           id,
           nom_complet,
-          telephone,
-          email,
-          commune_ville,
-          statut_abonnement,
+          ecole_id,
+          profile_status,
           created_at,
-          parent_eleves (
-            eleves ( id, nom_complet, classe, ecoles ( nom ) )
+          parent_enfant!parent_enfant_parent_id_fkey (
+            eleves (
+              id,
+              pseudonyme,
+              classe_id
+            )
+          ),
+          eleves!eleves_parent_id_fkey (
+            id,
+            pseudonyme,
+            classe_id
           )
         `)
+        .eq('role', 'parent')
         .order('created_at', { ascending: false });
 
+      // Filtrer : inclure l'école par défaut OU les profils sans école (ecole_id is null)
       if (DEFAULT_SCHOOL_ID && !isSuperAdmin) {
-        query = query.eq('ecole_id', DEFAULT_SCHOOL_ID);
+        query = query.or(`ecole_id.eq.${DEFAULT_SCHOOL_ID},ecole_id.is.null`);
       }
 
       const { data, error } = await query;
@@ -46,21 +61,35 @@ export function useParents(isSuperAdmin: boolean = false) {
         return [];
       }
 
-      return (data || []).map((p: any) => ({
-        id: p.id,
-        nom_complet: p.nom_complet || '',
-        telephone: p.telephone || '',
-        email: p.email,
-        commune_ville: p.commune_ville || '',
-        statut_abonnement: p.statut_abonnement || 'EN_ATTENTE',
-        created_at: p.created_at,
-        eleves_lies: (p.parent_eleves || []).map((pe: any) => ({
-          id: pe.eleves?.id || '',
-          nom_complet: pe.eleves?.nom_complet || '',
-          classe: pe.eleves?.classe || '',
-          ecole_nom: pe.eleves?.ecoles?.nom || '',
-        })),
-      }));
+      return (data || []).map((p: any) => {
+        const elevesFromJonction = (p.parent_enfant || [])
+          .map((pe: any) => pe.eleves)
+          .filter(Boolean);
+
+        const elevesFromDirectFK = p.eleves || [];
+
+        const allEleves = [...elevesFromJonction, ...elevesFromDirectFK];
+        const uniqueElevesMap = new Map();
+
+        allEleves.forEach((e: any) => {
+          if (e && e.id && !uniqueElevesMap.has(e.id)) {
+            uniqueElevesMap.set(e.id, {
+              id: e.id,
+              pseudonyme: e.pseudonyme || 'Élève',
+              classe_id: e.classe_id,
+            });
+          }
+        });
+
+        return {
+          id: p.id,
+          nom_complet: p.nom_complet || 'Parent sans nom',
+          profile_status: p.profile_status ?? false,
+          statut_abonnement: p.profile_status ? 'ACTIF' : 'EN_ATTENTE',
+          created_at: p.created_at,
+          eleves_lies: Array.from(uniqueElevesMap.values()),
+        };
+      });
     },
   });
 }

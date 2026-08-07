@@ -1,10 +1,12 @@
+// src/app/(dashboard)/teacher/courses/page.tsx
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useCourses, useCreateCourse } from '@/hooks/use-courses';
 
 export default function TeacherCoursesPage() {
-  const { data: courses, isLoading, isError } = useCourses();
+  const { data: courses, isLoading } = useCourses();
   const createCourseMutation = useCreateCourse();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,9 +14,6 @@ export default function TeacherCoursesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [formTitre, setFormTitre] = useState('');
-  const [formClasse, setFormClasse] = useState('6ème Math-Physique');
-  const [formMatiere, setFormMatiere] = useState('Mathématiques');
-  const [formDescription, setFormDescription] = useState('');
 
   const filteredCourses = (courses || []).filter((c) => {
     const matchesSearch = c.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,13 +28,9 @@ export default function TeacherCoursesPage() {
 
     await createCourseMutation.mutateAsync({
       titre: formTitre,
-      classe: formClasse,
-      matiere_nom: formMatiere,
-      description: formDescription,
     });
 
     setFormTitre('');
-    setFormDescription('');
     setIsModalOpen(false);
   };
 
@@ -64,7 +59,7 @@ export default function TeacherCoursesPage() {
         <div className="md:col-span-2 relative">
           <input
             type="text"
-            placeholder="Rechercher par titre de cours, chapitre ou matière..."
+            placeholder="Rechercher par titre de cours ou matière..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
@@ -92,7 +87,7 @@ export default function TeacherCoursesPage() {
         </div>
       ) : filteredCourses.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400">
-          Aucun cours trouvé correspondant à votre recherche.
+          Aucun cours trouvé.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,34 +99,31 @@ export default function TeacherCoursesPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold px-2.5 py-1 rounded-lg">
-                    {course.matiere_nom || 'Général'}
-                  </span>
-                  <span className="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg">
-                    {course.classe}
+                    {course.matiere_nom || 'Matière'}
                   </span>
                 </div>
                 <h3 className="font-semibold text-white text-lg group-hover:text-teal-400 transition leading-snug">
                   {course.titre}
                 </h3>
-                <p className="text-sm text-slate-400 mt-2 line-clamp-3">
-                  {course.description || 'Aucune description fournie.'}
-                </p>
               </div>
 
               <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
                 <span className="flex items-center gap-1.5 font-medium text-slate-300">
-                  <span>📖</span> {course.chapitres_count || 0} Chapitres
+                  <span>📖</span> {course.chapitres_count || 0} Leçons
                 </span>
-                <button className="text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1">
+                <Link
+                  href={`/teacher/courses/${course.id}`}
+                  className="text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1 transition"
+                >
                   Gérer les leçons &rarr;
-                </button>
+                </Link>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* New Course Modal */}
+      {/* Modal Léger pour créer un Cours */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -152,54 +144,13 @@ export default function TeacherCoursesPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Chimie Organique - Réactions d Addition"
+                  placeholder="Ex: Chimie Organique"
                   value={formTitre}
                   onChange={(e) => setFormTitre(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
-                    Classe Cible
-                  </label>
-                  <select
-                    value={formClasse}
-                    onChange={(e) => setFormClasse(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                  >
-                    <option value="6ème Math-Physique">6ème Math-Physique</option>
-                    <option value="6ème Bio-Chimie">6ème Bio-Chimie</option>
-                    <option value="4ème Littéraire">4ème Littéraire</option>
-                    <option value="8ème EB (Éducation de Base)">8ème EB</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
-                    Matière
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Chimie"
-                    value={formMatiere}
-                    onChange={(e) => setFormMatiere(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Description & Objectifs Pédagogiques
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Présentation résumée des notions clés abordées..."
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                />
-              </div>
+
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"

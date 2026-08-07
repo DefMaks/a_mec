@@ -25,7 +25,7 @@ export function RoleSelector() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={}
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
         title="Cliquer pour changer de rôle de démonstration"
       >
         <span>{roleInfo.icon}</span>
@@ -49,10 +49,13 @@ export function RoleSelector() {
                     setRole(rKey);
                     setIsOpen(false);
                   }}
-                  className={}
+                  className={`w-full flex items-start gap-3 p-2 rounded-xl text-left transition-colors ${isSelected
+                      ? 'bg-teal-500/10 border border-teal-500/30'
+                      : 'hover:bg-slate-800 border border-transparent'
+                    }`}
                 >
                   <span className="text-lg mt-0.5">{item.icon}</span>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold">{item.label}</span>
                       {isSelected && (
