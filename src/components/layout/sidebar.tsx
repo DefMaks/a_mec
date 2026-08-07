@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { APP_NAME, APP_SHORT_NAME } from '@/lib/config';
 
 interface SidebarProps {
   userRole?: string;
@@ -13,7 +14,7 @@ export function Sidebar({ userRole = 'admin' }: SidebarProps) {
 
   const adminNavItems = [
     { label: "Vue d'ensemble", href: '/', icon: '📊' },
-    { label: 'Écoles', href: '/admin/schools', icon: '🏫' },
+    { label: 'Gestion Écoles', href: '/admin/schools', icon: '🏫' },
     { label: 'Enseignants', href: '/admin/teachers', icon: '👨‍🏫' },
     { label: 'Élèves & Classes', href: '/admin/students', icon: '🎓' },
     { label: 'Parents', href: '/admin/parents', icon: '👨‍👩‍👧' },
@@ -27,12 +28,12 @@ export function Sidebar({ userRole = 'admin' }: SidebarProps) {
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800">
       <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-teal-500 text-slate-950 font-bold flex items-center justify-center text-lg shadow-md">
-          MEC
+        <div className="w-10 h-10 rounded-xl bg-teal-500 text-slate-950 font-bold flex items-center justify-center text-base shadow-md">
+          {APP_SHORT_NAME}
         </div>
         <div>
-          <h2 className="font-bold text-white text-base leading-tight">E-RDC Admin</h2>
-          <p className="text-xs text-teal-400 capitalize">{userRole.replace('_', ' ')}</p>
+          <h2 className="font-bold text-white text-sm leading-tight">{APP_NAME}</h2>
+          <p className="text-[11px] text-teal-400 capitalize">{userRole.replace('_', ' ')}</p>
         </div>
       </div>
 
@@ -60,7 +61,7 @@ export function Sidebar({ userRole = 'admin' }: SidebarProps) {
       </nav>
 
       <div className="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-        Plateforme A_MEC Next.js 15
+        Portail {APP_SHORT_NAME} Next.js 15
       </div>
     </aside>
   );

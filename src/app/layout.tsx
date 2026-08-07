@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { QueryProvider } from '@/lib/query-provider';
+import { APP_NAME, APP_SHORT_NAME } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'E-RDC Admin (Mon Espace Classe)',
-  description: 'Portail d Administration Éducative RDC - Next.js 15 & Supabase',
+  title: `${APP_NAME} (${APP_SHORT_NAME}) - E-RDC Admin`,
+  description: `Portail d Administration Éducative RDC - ${APP_NAME} (${APP_SHORT_NAME})`,
 };
 
 export default function RootLayout({

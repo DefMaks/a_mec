@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { DEFAULT_SCHOOL_ID, APP_NAME, APP_SHORT_NAME } from '@/lib/config';
 
 export interface ParentItem {
   id: string;
@@ -12,13 +13,13 @@ export interface ParentItem {
   created_at: string;
 }
 
-export function useParents() {
+export function useParents(isSuperAdmin: boolean = false) {
   const supabase = getSupabaseBrowserClient();
 
   return useQuery({
-    queryKey: ['parents'],
+    queryKey: ['parents', isSuperAdmin, DEFAULT_SCHOOL_ID],
     queryFn: async (): Promise<ParentItem[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('parents')
         .select(`
           id,
@@ -34,8 +35,15 @@ export function useParents() {
         `)
         .order('created_at', { ascending: false });
 
+      if (DEFAULT_SCHOOL_ID && !isSuperAdmin) {
+        query = query.eq('ecole_id', DEFAULT_SCHOOL_ID);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         console.warn('Fallback local parents:', error.message);
+        const schoolName = `${APP_NAME} (${APP_SHORT_NAME})`;
         return [
           {
             id: 'par-1',
@@ -46,8 +54,8 @@ export function useParents() {
             statut_abonnement: 'ACTIF',
             created_at: new Date().toISOString(),
             eleves_lies: [
-              { id: 'el-101', nom_complet: 'Mbuyi Jean', classe: '6ème Math-Physique', ecole_nom: 'Collège Boboto' },
-              { id: 'el-102', nom_complet: 'Mbuyi Marie', classe: '4ème Littéraire', ecole_nom: 'Lycée Sacré Cœur' },
+              { id: 'el-101', nom_complet: 'Mbuyi Jean', classe: '6ème Math-Physique', ecole_nom: schoolName },
+              { id: 'el-102', nom_complet: 'Mbuyi Marie', classe: '4ème Littéraire', ecole_nom: schoolName },
             ],
           },
           {
@@ -59,19 +67,7 @@ export function useParents() {
             statut_abonnement: 'EN_ATTENTE',
             created_at: new Date(Date.now() - 86400000).toISOString(),
             eleves_lies: [
-              { id: 'el-201', nom_complet: 'Tshilombo David', classe: '8ème EB', ecole_nom: 'Institut Plastique' },
-            ],
-          },
-          {
-            id: 'par-3',
-            nom_complet: 'Kambale Eric',
-            telephone: '+243851122334',
-            email: 'eric.kambale@outlook.com',
-            commune_ville: 'Goma, Nord-Kivu',
-            statut_abonnement: 'ACTIF',
-            created_at: new Date(Date.now() - 172800000).toISOString(),
-            eleves_lies: [
-              { id: 'el-301', nom_complet: 'Kambale Blessing', classe: '6ème Bio-Chimie', ecole_nom: 'Complexe Metanoia' },
+              { id: 'el-201', nom_complet: 'Tshilombo David', classe: '8ème EB', ecole_nom: schoolName },
             ],
           },
         ];
@@ -82,14 +78,14 @@ export function useParents() {
         nom_complet: p.nom_complet || 'Parent sans nom',
         telephone: p.telephone || 'N/A',
         email: p.email,
-        commune_ville: p.commune_ville || 'RDC',
+        commune_ville: p.commune_ville || 'Kinshasa, RDC',
         statut_abonnement: p.statut_abonnement || 'EN_ATTENTE',
         created_at: p.created_at,
         eleves_lies: (p.parent_eleves || []).map((pe: any) => ({
           id: pe.eleves?.id || 'el-unk',
           nom_complet: pe.eleves?.nom_complet || 'Élève',
           classe: pe.eleves?.classe || 'Inconnue',
-          ecole_nom: pe.eleves?.ecoles?.nom || 'École',
+          ecole_nom: pe.eleves?.ecoles?.nom || schoolName,
         })),
       }));
     },

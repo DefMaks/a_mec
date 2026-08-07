@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
 export interface CourseItem {
   id: string;
@@ -9,6 +10,7 @@ export interface CourseItem {
   matiere_nom?: string;
   classe?: string;
   enseignant_id?: string;
+  ecole_id?: string;
   created_at?: string;
   chapitres_count?: number;
 }
@@ -25,56 +27,53 @@ export interface ChapterItem {
   created_at?: string;
 }
 
-export function useCourses() {
+export function useCourses(isSuperAdmin: boolean = false) {
   const supabase = getSupabaseBrowserClient();
 
   return useQuery({
-    queryKey: ['courses'],
+    queryKey: ['courses', isSuperAdmin, DEFAULT_SCHOOL_ID],
     queryFn: async (): Promise<CourseItem[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('cours')
         .select(`
           id,
           titre,
           description,
           classe,
-          matiere_id,
-          enseignant_id,
           created_at,
-          matieres ( nom ),
-          chapitres ( count )
+          matieres ( id, nom ),
+          chapitres ( id )
         `)
         .order('created_at', { ascending: false });
 
+      if (DEFAULT_SCHOOL_ID && !isSuperAdmin) {
+        query = query.eq('ecole_id', DEFAULT_SCHOOL_ID);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
-        console.warn('Fallback local pour cours:', error.message);
+        console.warn('Fallback local courses:', error.message);
         return [
           {
-            id: 'c-1',
-            titre: 'Analyse Mathématique - Fonctions Logarithmiques',
-            description: 'Étude approfondie des fonctions dérivables et logarithmes pour EXETAT',
-            classe: '6ème des Humanités Math-Physique',
+            id: 'c-101',
+            titre: 'Analyse Mathématique - Fonctions Dérivables & Intégrales',
+            description: 'Programme officiel EXETAT RDC pour les sections scientifiques.',
             matiere_nom: 'Mathématiques',
-            created_at: new Date().toISOString(),
+            classe: '6ème Math-Physique',
+            ecole_id: DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661',
             chapitres_count: 5,
+            created_at: new Date().toISOString(),
           },
           {
-            id: 'c-2',
-            titre: 'Chimie Organique - Les Hydrocarbures',
-            description: 'Structure, nomenclature et réactions des alcanes et alcènes',
-            classe: '6ème Bio-Chimie',
-            matiere_nom: 'Chimie',
-            created_at: new Date().toISOString(),
-            chapitres_count: 4,
-          },
-          {
-            id: 'c-3',
-            titre: 'Histoire RDC - La Colonisation et Indépendance (1908-1960)',
-            description: 'Mouvements d émancipation et figures historiques de la RDC',
-            classe: '4ème Littéraire',
-            matiere_nom: 'Histoire',
-            created_at: new Date().toISOString(),
+            id: 'c-102',
+            titre: 'Physique Quantique & Optique Géométrique',
+            description: 'Optique, réfraction et lois de Snell-Descartes.',
+            matiere_nom: 'Physique',
+            classe: '6ème Math-Physique',
+            ecole_id: DEFAULT_SCHOOL_ID || '64c583de-e9e2-456b-8942-164656544661',
             chapitres_count: 3,
+            created_at: new Date().toISOString(),
           },
         ];
       }
@@ -83,83 +82,12 @@ export function useCourses() {
         id: item.id,
         titre: item.titre,
         description: item.description,
-        classe: item.classe,
-        matiere_id: item.matiere_id,
-        matiere_nom: item.matieres?.nom || 'Matière générale',
-        enseignant_id: item.enseignant_id,
+        matiere_id: item.matieres?.id,
+        matiere_nom: item.matieres?.nom || 'Général',
+        classe: item.classe || 'Toutes',
+        chapitres_count: item.chapitres?.length || 0,
         created_at: item.created_at,
-        chapitres_count: item.chapitres?.[0]?.count || 0,
       }));
-    },
-  });
-}
-
-export function useCourseChapters(courseId: string) {
-  const supabase = getSupabaseBrowserClient();
-
-  return useQuery({
-    queryKey: ['course-chapters', courseId],
-    queryFn: async (): Promise<ChapterItem[]> => {
-      if (!courseId) return [];
-
-      const { data, error } = await supabase
-        .from('chapitres')
-        .select('*')
-        .eq('cours_id', courseId)
-        .order('ordre', { ascending: true });
-
-      if (error) {
-        console.warn('Fallback chapitres:', error.message);
-        return [
-          {
-            id: 'chap-1',
-            cours_id: courseId,
-            titre: 'Chapitre 1 : Définition et Propriétés Fondamentales',
-            ordre: 1,
-            contenu: 'Rappels théoriques et limites des fonctions logarithmiques.',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'chap-2',
-            cours_id: courseId,
-            titre: 'Chapitre 2 : Calcul de Dérivées et Intégrales',
-            ordre: 2,
-            contenu: 'Formules explicites et méthodes d intégration par parties.',
-            created_at: new Date().toISOString(),
-          },
-        ];
-      }
-
-      return data || [];
-    },
-    enabled: !!courseId,
-  });
-}
-
-export function useCreateCourse() {
-  const queryClient = useQueryClient();
-  const supabase = getSupabaseBrowserClient();
-
-  return useMutation({
-    mutationFn: async (newCourse: Omit<CourseItem, 'id' | 'created_at' | 'chapitres_count'>) => {
-      const { data, error } = await supabase
-        .from('cours')
-        .insert([newCourse])
-        .select()
-        .single();
-
-      if (error) {
-        console.warn('Simulated course creation:', error.message);
-        return {
-          id: `c-${Date.now()}`,
-          ...newCourse,
-          created_at: new Date().toISOString(),
-        };
-      }
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
     },
   });
 }
