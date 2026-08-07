@@ -2,7 +2,7 @@
   "name": "a_mec",
   "version": "2.0.0",
   "private": true,
-  "description": "Plateforme d'Administration Éducative E-RDC (Mon Espace Classe / A_MEC) - Next.js 15 & Supabase",
+  "description": "Plateforme d'Administration \u00c9ducative E-RDC (Mon Espace Classe / A_MEC) - Next.js 15 & Supabase",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -46,6 +46,8 @@
     "@types/react-dom": "^19.0.3",
     "postcss": "^8.5.1",
     "tailwindcss": "^4.0.5",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "@tailwindcss/postcss": "^4.0.5",
+    "autoprefixer": "^10.4.20"
   }
 }
