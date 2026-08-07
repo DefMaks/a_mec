@@ -1,3 +1,4 @@
+// src/app/(dashboard)/student/quizzes/page.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -171,7 +172,10 @@ export default function StudentQuizzesPage() {
                     return (
                       <div
                         key={q.numOrder}
-                        className={}
+                        className={`p-4 rounded-xl border text-xs space-y-1.5 ${isCorrect
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                          }`}
                       >
                         <div className="font-bold flex justify-between">
                           <span>Question {q.numOrder} : {q.question}</span>
@@ -222,7 +226,7 @@ export default function StudentQuizzesPage() {
                     <div
                       className="bg-purple-500 h-full transition-all duration-300"
                       style={{
-                        width: ,
+                        width: `${((currentQuestionIndex + 1) / activeQuiz.questions.length) * 100}%`,
                       }}
                     ></div>
                   </div>
@@ -246,10 +250,10 @@ export default function StudentQuizzesPage() {
                             optKey === 'A'
                               ? q.optionA
                               : optKey === 'B'
-                              ? q.optionB
-                              : optKey === 'C'
-                              ? q.optionC
-                              : q.optionD;
+                                ? q.optionB
+                                : optKey === 'C'
+                                  ? q.optionC
+                                  : q.optionD;
 
                           const isSelected = currentSelection === optKey;
 
@@ -257,10 +261,16 @@ export default function StudentQuizzesPage() {
                             <button
                               key={optKey}
                               onClick={() => handleSelectOption(q.numOrder, optKey)}
-                              className={}
+                              className={`p-3.5 rounded-xl border text-left text-xs font-semibold transition flex items-center gap-3 ${isSelected
+                                  ? 'bg-purple-500/20 border-purple-500 text-purple-300'
+                                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                                }`}
                             >
                               <span
-                                className={}
+                                className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[11px] ${isSelected
+                                    ? 'bg-purple-500 text-white'
+                                    : 'bg-slate-800 text-slate-400'
+                                  }`}
                               >
                                 {optKey}
                               </span>
