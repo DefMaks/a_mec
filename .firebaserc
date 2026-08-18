@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "mon-ecole-chez-moi",
+    "staging": "mon-ecole-chez-moi-c9364"
+  },
+  "targets": {},
+  "etags": {}
+}

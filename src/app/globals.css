@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #F8FAFC;
+    color: #1E293B;
+    font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Utilities for Académie du Salut (ADS) Theme */
+.bg-ads-primary {
+  background-color: #0F2C59;
+}
+.text-ads-primary {
+  color: #0F2C59;
+}
+.border-ads-primary {
+  border-color: #0F2C59;
+}
+
+.bg-ads-gold {
+  background-color: #D4AF37;
+}
+.text-ads-gold {
+  color: #D4AF37;
+}
+.border-ads-gold {
+  border-color: #D4AF37;
+}
+
+.bg-ads-canvas {
+  background-color: #F8FAFC;
+}
+
+.bg-ads-card {
+  background-color: #FFFFFF;
+}
+
+/* Tabular figures for financial and metric numbers */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* TipTap & Rich Content Styles */
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0F2C59;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0F2C59;
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #D4AF37;
+  background-color: #FFFBEB;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  margin: 0.75rem 0;
+  color: #78350F;
+  font-style: italic;
+}
+
+.ProseMirror pre {
+  background-color: #0F172A;
+  color: #F8FAFC;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.ProseMirror img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 0.75rem auto;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}

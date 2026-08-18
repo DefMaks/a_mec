@@ -1,0 +1,65 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+.npm
+.yarn
+
+# Build outputs
+www/
+platforms/
+plugins/
+resources/
+build/
+dist/
+out/
+.next/
+.nuxt/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+*.vs/
+*.code-workspace
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Angular specific
+.angular/
+.angular-locale.json
+ngcc_lock_file
+.angular/cache/
+.angular/build/
+
+# TypeScript
+*.tsbuildinfo
+*.tscache
+
+# Logs
+logs
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+tmp/
+temp/
+.DS_Store
+Thumbs.db
+
+# Cordova / Capacitor (si utilisé)
+capacitor.config.ts.bak
+ios/
+android/
