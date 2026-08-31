@@ -1,0 +1,8 @@
+{
+  "name": "E-RDC (Mon Espace Classe)",
+  "description": "Portail d'Administration Éducative et de Gestion Scolaire RDC (Mon Espace Classe / A_MEC)",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
