@@ -253,30 +253,73 @@ export async function fetchSessionDichotomy(
     if (role === 'teacher') {
       const teacherId = actualUserId || PROF_SHASA_ID;
 
+      // Récupérer le profil et les cours de l'enseignant
       const [
         { data: profile },
         { data: cours },
-        { data: chapitres },
-        { data: quizzes },
-        { data: classes },
-        { data: eleves },
-        { data: attempts },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', teacherId).maybeSingle(),
         supabase.from('cours').select('*, matieres(*), classes(*)').eq('enseignant_id', teacherId),
-        supabase.from('chapitres').select('*'),
-        supabase.from('quiz').select('*'),
-        supabase.from('classes').select('*, niveaux(*)').eq('ecole_id', schoolId),
-        supabase.from('eleves').select('*, classes(*)'),
-        supabase.from('quiz_attempts').select('*, eleves(pseudonyme)'),
       ]);
 
       const teacherCours = cours || [];
-      const teacherChapitreIds = (chapitres || []).filter((ch) =>
-        teacherCours.some((c) => c.id === ch.cours_id)
-      ).map((ch) => ch.id);
 
-      const teacherQuizzes = (quizzes || []).filter((q) => teacherChapitreIds.includes(q.chapitre_id || ''));
+      // Déterminer les classes de l'enseignant
+      // L'enseignant a accès aux classes pour lesquelles il est "titulaire_id"
+      // ou les classes liées à ses cours.
+      const coursClasseIds = teacherCours.map(c => c.classe_id).filter(Boolean) as string[];
+
+      let classesQuery = supabase
+        .from('classes')
+        .select('*, niveaux(*)')
+        .eq('ecole_id', schoolId);
+
+      if (coursClasseIds.length > 0) {
+        classesQuery = classesQuery.or(`titulaire_id.eq.${teacherId},id.in.(${coursClasseIds.join(',')})`);
+      } else {
+        classesQuery = classesQuery.eq('titulaire_id', teacherId);
+      }
+
+      const { data: teacherClasses } = await classesQuery;
+      const classes = teacherClasses || [];
+      const teacherClasseIds = classes.map(c => c.id);
+
+      // Charger les données associées uniquement pour les classes / cours de cet enseignant
+      const [
+        { data: chapitres },
+        { data: quizzes },
+        { data: eleves },
+        { data: attempts },
+      ] = await Promise.all([
+        supabase.from('chapitres').select('*'),
+        supabase.from('quiz').select('*'),
+        teacherClasseIds.length > 0
+          ? supabase.from('eleves').select('*, classes(*)').in('classe_id', teacherClasseIds)
+          : Promise.resolve({ data: [] }),
+        supabase.from('quiz_attempts').select('*, eleves(pseudonyme, classe_id)'),
+      ]);
+
+      const teacherChapitres = (chapitres || []).filter((ch) =>
+        teacherCours.some((c) => c.id === ch.cours_id)
+      );
+
+      const teacherChapitreIds = teacherChapitres.map((ch) => ch.id);
+      const teacherCourseIds = teacherCours.map((c) => c.id);
+
+      const teacherQuizzes = (quizzes || []).filter((q) =>
+        teacherChapitreIds.includes(q.chapitre_id || '') || teacherCourseIds.includes(q.cours_id || '')
+      );
+
+      const teacherQuizIds = teacherQuizzes.map(q => q.id);
+
+      // Filtrer les tentatives pour ne voir que celles des quiz de l'enseignant
+      const teacherAttempts = (attempts || []).filter(a => teacherQuizIds.includes(a.quiz_id));
+
+      const classeProfesseurLinks = classes.map(cls => ({
+        classe_id: cls.id,
+        professeur_id: teacherId,
+        role_professeur: cls.titulaire_id === teacherId ? 'enseignant_titulaire' : 'enseignant_cours'
+      }));
 
       envelope.data = {
         profile: profile || {
@@ -285,7 +328,7 @@ export async function fetchSessionDichotomy(
           ecole_id: schoolId,
           nom_complet: 'Prof. Shasa Kanyinda',
         },
-        classes: classes || [
+        classes: classes.length > 0 ? classes : [
           {
             id: PRIMARY_CLASS_ID,
             nom: '1ère Primaire',
@@ -294,7 +337,7 @@ export async function fetchSessionDichotomy(
           },
         ],
         eleves: eleves || [],
-        classe_professeur: [
+        classe_professeur: classeProfesseurLinks.length > 0 ? classeProfesseurLinks : [
           {
             classe_id: PRIMARY_CLASS_ID,
             professeur_id: teacherId,
@@ -302,9 +345,9 @@ export async function fetchSessionDichotomy(
           },
         ],
         cours: teacherCours,
-        chapitres: chapitres || [],
-        quiz: teacherQuizzes.length > 0 ? teacherQuizzes : (quizzes || []),
-        quiz_attempts: attempts || [],
+        chapitres: teacherChapitres,
+        quiz: teacherQuizzes,
+        quiz_attempts: teacherAttempts,
       };
       return envelope;
     }
