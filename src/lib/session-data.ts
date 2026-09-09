@@ -153,6 +153,9 @@ export async function fetchSessionDichotomy(
   };
 
   try {
+    const { data: authData } = await supabase.auth.getUser();
+    const actualUserId = authData.user?.id || profileId;
+
     // 1. SUPER ADMIN (CRUD - Toutes les données)
     if (role === 'super_admin') {
       const [
@@ -173,9 +176,11 @@ export async function fetchSessionDichotomy(
         supabase.from('quiz_attempts').select('*, eleves(pseudonyme)'),
       ]);
 
+      let userProfile = profiles?.find((p) => p.id === actualUserId);
+
       envelope.data = {
-        profile: profiles?.[0] || {
-          id: profileId || 'superadmin-uuid',
+        profile: userProfile || {
+          id: actualUserId || 'superadmin-uuid',
           role: 'super_admin',
           nom_complet: 'Super Administrateur ADS',
           ecole_id: null,
@@ -209,8 +214,8 @@ export async function fetchSessionDichotomy(
         { data: quizzes },
         { data: attempts },
       ] = await Promise.all([
-        profileId
-          ? supabase.from('profiles').select('*').eq('id', profileId).single()
+        actualUserId
+          ? supabase.from('profiles').select('*').eq('id', actualUserId).single()
           : supabase.from('profiles').select('*').eq('role', 'admin').limit(1).maybeSingle(),
         supabase.from('classes').select('*, niveaux(*)').eq('ecole_id', schoolId),
         supabase.from('eleves').select('*, parent:profiles(id, nom_complet, telephone), classes!inner(*)').eq('classes.ecole_id', schoolId),
@@ -222,7 +227,7 @@ export async function fetchSessionDichotomy(
 
       envelope.data = {
         profile: profile || {
-          id: profileId || 'admin-uuid',
+          id: actualUserId || 'admin-uuid',
           role: 'admin',
           ecole_id: schoolId,
           nom_complet: 'Direction Académie du Salut',
@@ -246,7 +251,7 @@ export async function fetchSessionDichotomy(
 
     // 3. TEACHER - Voit ses classes + l'activité de leurs élèves
     if (role === 'teacher') {
-      const teacherId = profileId || PROF_SHASA_ID;
+      const teacherId = actualUserId || PROF_SHASA_ID;
 
       const [
         { data: profile },
@@ -306,7 +311,7 @@ export async function fetchSessionDichotomy(
 
     // 4. PARENT
     if (role === 'parent') {
-      const parentId = profileId || 'ff3f802f-ac54-455d-a660-fc265d220113';
+      const parentId = actualUserId || 'ff3f802f-ac54-455d-a660-fc265d220113';
 
       const [
         { data: profile },
