@@ -8,7 +8,7 @@ import { useStudents } from '@/hooks/use-students';
 import { usePayments } from '@/hooks/use-payments';
 import { useQuizzes } from '@/hooks/use-quizzes';
 import { useCourses } from '@/hooks/use-courses';
-import { useTeacherMe, useTeacherChapters } from '@/hooks/use-teacher-data';
+import { useTeacherMe, useTeacherChapters, useTeacherAssignments } from '@/hooks/use-teacher-data';
 import { useRole } from '@/context/role-context';
 import { APP_NAME, APP_SHORT_NAME, isProduction } from '@/lib/config';
 import { ParentDashboard } from '@/components/dashboard/parent-dashboard';
@@ -48,6 +48,7 @@ export default function DashboardOverviewPage() {
   // Teacher specific data (Simulation Professeur Shasa: auth.user b6416211-0e05-4432-85e9-c5b3b243e543)
   const { data: teacherMe } = useTeacherMe();
   const { data: teacherChaptersData } = useTeacherChapters(teacherMe?.profileId || null);
+  const { data: teacherAssignmentsData } = useTeacherAssignments(teacherMe?.profileId || null);
 
   const teacherCoursList = teacherChaptersData?.cours || courses || [];
   const teacherChapitresList = teacherChaptersData?.chapitres || [];
@@ -774,6 +775,39 @@ export default function DashboardOverviewPage() {
                 </div>
                 <ArrowUpRight className="w-4 h-4 text-[#64748B] group-hover:text-[#0F2C59]" />
               </Link>
+            </div>
+          </div>
+
+          {/* Classes Encadrées */}
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+              <h3 className="text-sm font-bold text-[#0F2C59] flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#D4AF37]" />
+                <span>Mes Classes</span>
+              </h3>
+            </div>
+            <div className="divide-y divide-[#F1F5F9] max-h-[300px] overflow-y-auto">
+              {teacherAssignmentsData?.classes && teacherAssignmentsData.classes.length > 0 ? (
+                teacherAssignmentsData.classes.map((cls) => (
+                  <div key={cls.id} className="p-4 hover:bg-[#F8FAFC] transition">
+                    <p className="text-sm font-bold text-[#0F2C59]">{cls.nom}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EFF6FF] text-[#1D4ED8]">
+                        {cls.niveau_nom || 'Primaire'}
+                      </span>
+                      {cls.option_nom && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFFBEB] text-[#B45309]">
+                          {cls.option_nom}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center text-xs text-[#64748B]">
+                  Aucune classe ne vous est assignée actuellement.
+                </div>
+              )}
             </div>
           </div>
 
