@@ -397,17 +397,35 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
 
       // 2) Classes avec jointures
       let classes: any[] = [];
-      const { data: cData } = await supabase
+
+      // Fetch teacher's specific courses first to filter classes properly
+      const { cours: fetchedCours } = await loadTeacherChapters(profileId || null);
+
+      const teacherId = profileId;
+      const coursClasseIds = fetchedCours.map(c => c.classe_id).filter(Boolean) as string[];
+
+      let classesQuery = supabase
         .from('classes')
         .select(`
           id,
           vacation,
           niveau_id,
           option_id,
+          titulaire_id,
           niveaux (nom, code),
           options (nom, code)
         `)
         .order('created_at', { ascending: false });
+
+      if (teacherId) {
+         if (coursClasseIds.length > 0) {
+           classesQuery = classesQuery.or(`titulaire_id.eq.${teacherId},id.in.(${coursClasseIds.join(',')})`);
+         } else {
+           classesQuery = classesQuery.eq('titulaire_id', teacherId);
+         }
+      }
+
+      const { data: cData } = await classesQuery;
 
       if (cData && cData.length > 0) {
         classes = cData.map((cls: any) => {
@@ -434,7 +452,8 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
       }
 
       // 3) Cours existants
-      const { cours } = await loadTeacherChapters(profileId || null);
+      // fetchedCours already retrieved above
+      const cours = fetchedCours;
 
       return {
         matieres: matieres.length > 0 ? matieres : [

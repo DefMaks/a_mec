@@ -45,39 +45,48 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Vérification basique des rôles via les métadonnées (si disponibles) pour sécuriser le middleware
-  // Note: Pour une sécurité maximale, on devrait interroger la table public.profiles
-  // mais cela nécessite une requête supplémentaire. L'approche JWT/metadata est plus performante
-  // pour le middleware.
-  if (user && user.user_metadata) {
-    const role = user.user_metadata.role as string;
+  // Vérification stricte des rôles via la table public.profiles pour éviter la manipulation
+  // des user_metadata côté client.
+  if (user) {
+    // Si la route nécessite une protection spécifique
+    const isProtectedAdmin = pathname.startsWith('/admin');
+    const isProtectedTeacher = pathname.startsWith('/teacher');
+    const isProtectedParent = pathname.startsWith('/parent');
+    const isProtectedStudent = pathname.startsWith('/student');
 
-    // Si on essaie d'accéder à l'admin sans être super_admin ou admin
-    if (pathname.startsWith('/admin') && role !== 'super_admin' && role !== 'admin') {
-       const url = request.nextUrl.clone();
-       url.pathname = '/'; // redirige vers le dashboard par défaut (qui sera géré par RoleGuard)
-       return NextResponse.redirect(url);
-    }
+    if (isProtectedAdmin || isProtectedTeacher || isProtectedParent || isProtectedStudent) {
+      // Interrogation sécurisée de la base de données
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-    // Si on essaie d'accéder à l'espace enseignant sans être teacher ou super_admin
-    if (pathname.startsWith('/teacher') && role !== 'super_admin' && role !== 'teacher') {
-       const url = request.nextUrl.clone();
-       url.pathname = '/';
-       return NextResponse.redirect(url);
-    }
+      const role = profile?.role;
 
-    // Si on essaie d'accéder à l'espace parent sans être parent ou super_admin
-    if (pathname.startsWith('/parent') && role !== 'super_admin' && role !== 'parent') {
-       const url = request.nextUrl.clone();
-       url.pathname = '/';
-       return NextResponse.redirect(url);
-    }
+      if (isProtectedAdmin && role !== 'super_admin' && role !== 'admin') {
+         const url = request.nextUrl.clone();
+         url.pathname = '/';
+         return NextResponse.redirect(url);
+      }
 
-    // Si on essaie d'accéder à l'espace étudiant sans être student ou super_admin
-    if (pathname.startsWith('/student') && role !== 'super_admin' && role !== 'student' && role !== 'eleve') {
-       const url = request.nextUrl.clone();
-       url.pathname = '/';
-       return NextResponse.redirect(url);
+      if (isProtectedTeacher && role !== 'super_admin' && role !== 'teacher') {
+         const url = request.nextUrl.clone();
+         url.pathname = '/';
+         return NextResponse.redirect(url);
+      }
+
+      if (isProtectedParent && role !== 'super_admin' && role !== 'parent') {
+         const url = request.nextUrl.clone();
+         url.pathname = '/';
+         return NextResponse.redirect(url);
+      }
+
+      if (isProtectedStudent && role !== 'super_admin' && role !== 'student' && role !== 'eleve') {
+         const url = request.nextUrl.clone();
+         url.pathname = '/';
+         return NextResponse.redirect(url);
+      }
     }
   }
 
