@@ -18,8 +18,27 @@ export function UserNav({ userEmail, userName }: UserNavProps) {
   const navRef = useRef<HTMLDivElement>(null);
   const { roleInfo } = useRole();
 
-  const activeName = userName || roleInfo.userName || 'Utilisateur';
-  const activeEmail = userEmail || roleInfo.userEmail || 'contact@academiedusalut.cd';
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [authName, setAuthName] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadAuth() {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          setAuthEmail(data.user.email || null);
+          const metaName = data.user.user_metadata?.nom_complet || data.user.user_metadata?.name;
+          if (metaName) setAuthName(metaName);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadAuth();
+  }, [supabase]);
+
+  const activeName = authName || userName || roleInfo.userName || 'Utilisateur';
+  const activeEmail = authEmail || userEmail || roleInfo.userEmail || 'contact@academiedusalut.cd';
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -36,6 +55,11 @@ export function UserNav({ userEmail, userName }: UserNavProps) {
       await supabase.auth.signOut();
     } catch {
       // ignore
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('a_mec_active_role');
+      localStorage.removeItem('a_mec_user_email');
+      localStorage.removeItem('a_mec_user_name');
     }
     router.push('/login');
     router.refresh();
