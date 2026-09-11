@@ -9,6 +9,7 @@ import { useRole } from '@/context/role-context';
 import { RoleGuard } from '@/components/layout/role-guard';
 import { detectAndFormatOperator, TWIGA_CONFIG, IS_PROD } from '@/lib/config';
 import { calculateAccessCountdown } from '@/lib/access-code-utils';
+import { stripHtmlTags } from '@/lib/html-utils';
 import {
   CreditCard,
   Sparkles,
@@ -233,7 +234,7 @@ export default function ParentPaymentsPage() {
                 </div>
 
                 <p className="text-xs text-[#475569] mt-2 leading-relaxed">
-                  {t.description}
+                  {stripHtmlTags(t.description)}
                 </p>
               </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateQuiz, QuizQuestion } from '@/hooks/use-quizzes';
 import { useTeacherMe, useTeacherAssignments, useTeacherChapters } from '@/hooks/use-teacher-data';
@@ -49,7 +49,6 @@ export default function NewQuizPage() {
   const [selectedCoursId, setSelectedCoursId] = useState('');
   const [selectedChapitreId, setSelectedChapitreId] = useState('');
   const [selectedMatiereId, setSelectedMatiereId] = useState('');
-  const [niveau, setNiveau] = useState<'EXETAT' | 'TENAFEP' | 'Classe_Standard'>('EXETAT');
   const [dureeMinutes, setDureeMinutes] = useState(30);
 
   const [questions, setQuestions] = useState<QuizQuestion[]>(createInitialTenQuestions());
@@ -58,6 +57,26 @@ export default function NewQuizPage() {
 
   const activeQuestion = questions[activeQuestionIndex];
 
+  // Auto-détection du niveau pédagogique (TENAFEP / EXETAT) à partir de la classe sélectionnée
+  const selectedClasse = useMemo(() => {
+    return assignments?.classes.find((c) => c.id === selectedClasseId);
+  }, [assignments?.classes, selectedClasseId]);
+
+  const derivedNiveau: 'EXETAT' | 'TENAFEP' | 'Classe_Standard' = useMemo(() => {
+    if (!selectedClasse) return 'EXETAT';
+    const label = (selectedClasse.niveau_nom || selectedClasse.nom || '').toLowerCase();
+    if (
+      label.includes('eb') ||
+      label.includes('primaire') ||
+      label.includes('base') ||
+      label.includes('7') ||
+      label.includes('8')
+    ) {
+      return 'TENAFEP';
+    }
+    return 'EXETAT';
+  }, [selectedClasse]);
+
   // Auto select first class / cours when loaded
   useEffect(() => {
     if (assignments?.classes && assignments.classes.length > 0 && !selectedClasseId) {
@@ -65,11 +84,21 @@ export default function NewQuizPage() {
     }
   }, [assignments, selectedClasseId]);
 
+  // Cours filtrés selon la classe affectée choisie
+  const filteredCours = useMemo(() => {
+    if (!chaptersData?.cours) return [];
+    if (!selectedClasseId) return chaptersData.cours;
+    const matched = chaptersData.cours.filter(
+      (c) => !c.classe_id || c.classe_id === selectedClasseId
+    );
+    return matched.length > 0 ? matched : chaptersData.cours;
+  }, [chaptersData?.cours, selectedClasseId]);
+
   useEffect(() => {
-    if (chaptersData?.cours && chaptersData.cours.length > 0 && !selectedCoursId) {
-      setSelectedCoursId(chaptersData.cours[0].id);
+    if (filteredCours && filteredCours.length > 0 && !selectedCoursId) {
+      setSelectedCoursId(filteredCours[0].id);
     }
-  }, [chaptersData, selectedCoursId]);
+  }, [filteredCours, selectedCoursId]);
 
   // Filtered chapters for the selected course
   const availableChapters = (chaptersData?.chapitres || []).filter(
@@ -119,7 +148,7 @@ export default function NewQuizPage() {
         matiere: selectedMatiere?.nom || selectedCourse?.matiere_nom || 'Discipline Générale',
         cours_id: selectedCoursId || undefined,
         chapitre_id: selectedChapitreId || undefined,
-        niveau,
+        niveau: derivedNiveau,
         duree_minutes: dureeMinutes,
         questions,
       });
@@ -166,60 +195,67 @@ export default function NewQuizPage() {
       <form onSubmit={handleSubmitQuiz} className="space-y-6">
         {/* 1. Informations Générales & Affectations Pédagogiques */}
         <div className="bg-white border border-[#E2E8F0] p-6 rounded-2xl shadow-xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-[#F1F5F9] pb-3">
-            <School className="w-4 h-4 text-[#0F2C59]" />
-            <h2 className="text-sm font-bold text-[#0F2C59]">
-              1. Paramètres du Quiz & Rapprochement de Classe / Cours
-            </h2>
+          <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+            <div className="flex items-center gap-2">
+              <School className="w-4 h-4 text-[#0F2C59]" />
+              <h2 className="text-sm font-bold text-[#0F2C59]">
+                1. Paramètres du Quiz & Rapprochement de Classe / Cours
+              </h2>
+            </div>
+            {selectedClasse && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-[#64748B] font-medium hidden sm:inline">Examen d'État cible :</span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                    derivedNiveau === 'EXETAT'
+                      ? 'bg-[#0F2C59]/10 text-[#0F2C59] border border-[#0F2C59]/20'
+                      : 'bg-[#008080]/10 text-[#008080] border border-[#008080]/20'
+                  }`}
+                >
+                  {derivedNiveau}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                Titre Officiel du Quiz *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ex: Évaluation Sommative #1 : Algèbre Linéaire & Trigonométrie"
-                value={titre}
-                onChange={(e) => setTitre(e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                Niveau d'Évaluation
-              </label>
-              <select
-                value={niveau}
-                onChange={(e) => setNiveau(e.target.value as any)}
-                className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
-              >
-                <option value="EXETAT">EXETAT (Humanités / Secondaire)</option>
-                <option value="TENAFEP">TENAFEP (Éducation de Base)</option>
-                <option value="Classe_Standard">Contrôle Continu Standard</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-[#0F2C59] mb-1">
+              Titre Officiel du Quiz *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Ex: Évaluation Sommative #1 : Algèbre Linéaire & Trigonométrie"
+              value={titre}
+              onChange={(e) => setTitre(e.target.value)}
+              className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
+            />
           </div>
 
           {/* Classes & Cours attachés au professeur */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-1">
             <div>
               <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                Classe Assignée *
+                Classe Affectée
               </label>
               <select
+                required
                 value={selectedClasseId}
                 onChange={(e) => setSelectedClasseId(e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
+                disabled={loadingAssignments}
+                className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30 font-medium cursor-pointer disabled:opacity-60"
               >
-                {assignments?.classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.nom}
-                  </option>
-                ))}
+                {loadingAssignments ? (
+                  <option value="">Chargement des affectations...</option>
+                ) : assignments?.classes && assignments.classes.length > 0 ? (
+                  assignments.classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.nom}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Aucune classe affectée à ce professeur</option>
+                )}
               </select>
             </div>
 
@@ -236,7 +272,7 @@ export default function NewQuizPage() {
                 className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
               >
                 <option value="">-- Tous les cours --</option>
-                {chaptersData?.cours.map((c) => (
+                {filteredCours.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.titre}
                   </option>

@@ -403,11 +403,32 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
 
       const teacherId = profileId;
       const coursClasseIds = fetchedCours.map(c => c.classe_id).filter(Boolean) as string[];
+      let assignedClasseIds = [...coursClasseIds];
+
+      // Récupérer les classes où le professeur est affecté (table classe_professeur)
+      if (teacherId) {
+        try {
+          const { data: cpData } = await supabase
+            .from('classe_professeur')
+            .select('classe_id')
+            .eq('professeur_id', teacherId);
+          if (cpData && cpData.length > 0) {
+            cpData.forEach((row: any) => {
+              if (row.classe_id && !assignedClasseIds.includes(row.classe_id)) {
+                assignedClasseIds.push(row.classe_id);
+              }
+            });
+          }
+        } catch {
+          // Table optionnelle selon la migration
+        }
+      }
 
       let classesQuery = supabase
         .from('classes')
         .select(`
           id,
+          nom,
           vacation,
           niveau_id,
           option_id,
@@ -418,8 +439,8 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
         .order('created_at', { ascending: false });
 
       if (teacherId) {
-         if (coursClasseIds.length > 0) {
-           classesQuery = classesQuery.or(`titulaire_id.eq.${teacherId},id.in.(${coursClasseIds.join(',')})`);
+         if (assignedClasseIds.length > 0) {
+           classesQuery = classesQuery.or(`titulaire_id.eq.${teacherId},id.in.(${assignedClasseIds.join(',')})`);
          } else {
            classesQuery = classesQuery.eq('titulaire_id', teacherId);
          }
@@ -431,7 +452,7 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
         classes = cData.map((cls: any) => {
           const niv = cls.niveaux?.nom || cls.niveaux?.code || '';
           const opt = cls.options?.nom || cls.options?.code || '';
-          const label = [niv, opt].filter(Boolean).join(' - ') || `Classe #${cls.id.slice(0, 6)}`;
+          const label = cls.nom || [niv, opt].filter(Boolean).join(' - ') || `Classe #${cls.id.slice(0, 6)}`;
           return {
             id: cls.id,
             nom: label,

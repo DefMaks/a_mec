@@ -15,6 +15,7 @@ import {
   Layers,
   Search,
 } from 'lucide-react';
+import { stripHtmlTags } from '@/lib/html-utils';
 
 export default function StudentCoursesPage() {
   const { data: courses, isLoading } = useCourses();
@@ -97,8 +98,8 @@ export default function StudentCoursesPage() {
                 <h3 className="font-extrabold text-base text-[#0F2C59] mt-3 group-hover:text-[#D4AF37] transition-colors">
                   {c.titre}
                 </h3>
-                <p className="text-xs text-[#64748B] mt-1 line-clamp-2">
-                  {c.description || 'Module d’apprentissage conforme au programme national d’enseignement de la RDC.'}
+                <p className="text-xs text-[#64748B] mt-1 line-clamp-2 leading-relaxed">
+                  {stripHtmlTags(c.description) || 'Module d’apprentissage conforme au programme national d’enseignement de la RDC.'}
                 </p>
 
                 {/* Chapitres Aperçu */}

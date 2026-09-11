@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMatieres, useCreateMatiere, useDeleteMatiere } from '@/hooks/use-matieres';
 import { useRole } from '@/context/role-context';
 import { RoleGuard } from '@/components/layout/role-guard';
+import { stripHtmlTags } from '@/lib/html-utils';
 import {
   BookOpen,
   Plus,
@@ -133,7 +134,7 @@ export default function AdminMatieresPage() {
 
                 <h3 className="font-extrabold text-base text-[#0F2C59]">{m.nom}</h3>
                 <p className="text-xs text-[#64748B] mt-2 leading-relaxed line-clamp-2">
-                  {m.description || 'Discipline du programme national d’enseignement de la RDC.'}
+                  {stripHtmlTags(m.description) || 'Discipline du programme national d’enseignement de la RDC.'}
                 </p>
               </div>
 

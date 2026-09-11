@@ -7,6 +7,7 @@ import { useTarifs, useUpdateTarif } from '@/hooks/use-tarifs';
 import { useRole } from '@/context/role-context';
 import { RoleGuard } from '@/components/layout/role-guard';
 import { TWIGA_CONFIG } from '@/lib/config';
+import { stripHtmlTags } from '@/lib/html-utils';
 import {
   CreditCard,
   CheckCircle2,
@@ -196,7 +197,7 @@ export default function AdminPaymentsPage() {
                   <span className="text-xs font-bold text-[#64748B]">{t.devise}</span>
                 </div>
                 <p className="text-xs text-[#475569] mt-2 leading-relaxed">
-                  {t.description}
+                  {stripHtmlTags(t.description)}
                 </p>
               </div>
 
