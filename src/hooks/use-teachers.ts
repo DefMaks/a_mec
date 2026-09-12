@@ -5,30 +5,6 @@ import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
 const LOCAL_TEACHERS_KEY = 'e_rdc_custom_teachers';
 
-const DEFAULT_TEACHERS: any[] = [
-  {
-    id: 'b6416211-0e05-4432-85e9-c5b3b243e543',
-    nom_complet: 'Prof. Shasa Kanyinda',
-    email: 'shasa.kanyinda@academiedusalut.cd',
-    telephone: '+243 81 234 5678',
-    role: 'teacher',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    ecoles: { nom: 'Académie du Salut' },
-  },
-  {
-    id: 'e534604c-1863-450c-96d9-f42c32179b2c',
-    nom_complet: 'Prof. Jean-Marc Ilunga',
-    email: 'prof.ilunga@academiedusalut.cd',
-    telephone: '+243 82 987 6543',
-    role: 'teacher',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    ecoles: { nom: 'Académie du Salut' },
-  },
-];
 
 export function getStoredTeachers(): Profile[] {
   if (typeof window !== 'undefined') {
@@ -95,8 +71,8 @@ export function useTeachers(filters?: { search?: string; activeOnly?: boolean },
         console.warn('Erreur résiliente teachers:', err?.message);
       }
 
-      // Fallback avec nos enseignants par défaut + locaux
-      const base = [...DEFAULT_TEACHERS];
+      // Fallback avec locaux uniquement
+      const base: Profile[] = [];
       localTeachers.forEach((lt) => {
         if (!base.some((c) => c.id === lt.id || c.email === lt.email)) {
           base.push(lt);
@@ -113,7 +89,7 @@ export function useTeachers(filters?: { search?: string; activeOnly?: boolean },
         ) as Profile[];
       }
 
-      return base as Profile[];
+      return base;
     },
     staleTime: 1000 * 60 * 5,
   });

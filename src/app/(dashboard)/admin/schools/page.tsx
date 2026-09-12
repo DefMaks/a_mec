@@ -10,9 +10,6 @@ import {
   useUnassignCourseFromClass,
   useBulkAssignCourses,
   useBulkUnassignCourses,
-  PRIMARY_CLASS_ID,
-  PROF_SHASA_ID,
-  STANDARD_PRIMARY_COURSES,
   LEARNING_DOMAINS,
   LearningDomain,
 } from '@/hooks/use-course-assignments';
@@ -54,7 +51,7 @@ export default function AdminSchoolsPage() {
   const createCourseMutation = useCreateCourse();
 
   const [activeTab, setActiveTab] = useState<'classes' | 'assignments' | 'schools'>('assignments');
-  const [selectedClasseId, setSelectedClasseId] = useState<string>(PRIMARY_CLASS_ID);
+  const [selectedClasseId, setSelectedClasseId] = useState<string>('');
 
   const { data: assignments } = useCourseAssignments();
   const assignMutation = useAssignCourseToClass();
@@ -73,12 +70,12 @@ export default function AdminSchoolsPage() {
   const [schoolIdNat, setSchoolIdNat] = useState('');
 
   const [classNom, setClassNom] = useState('');
-  const [classTitulaireId, setClassTitulaireId] = useState(PROF_SHASA_ID);
+  const [classTitulaireId, setClassTitulaireId] = useState('');
 
   const [courseTitre, setCourseTitre] = useState('');
   const [courseMatiereNom, setCourseMatiereNom] = useState('Mathématiques');
   const [courseDescription, setCourseDescription] = useState('');
-  const [courseTargetClasses, setCourseTargetClasses] = useState<string[]>([PRIMARY_CLASS_ID]);
+  const [courseTargetClasses, setCourseTargetClasses] = useState<string[]>([]);
 
   // Filter
   const [assignmentSearch, setAssignmentSearch] = useState('');
@@ -128,7 +125,7 @@ export default function AdminSchoolsPage() {
       matiere: courseMatiereNom,
       matiere_nom: courseMatiereNom,
       target_classe_ids: courseTargetClasses,
-      enseignant_id: PROF_SHASA_ID,
+      enseignant_id: '',
     });
 
     setCourseTitre('');
@@ -148,19 +145,9 @@ export default function AdminSchoolsPage() {
       await assignMutation.mutateAsync({
         cours_id: courseId,
         classe_id: selectedClasseId,
-        enseignant_id: PROF_SHASA_ID,
+        enseignant_id: '',
       });
     }
-  };
-
-  // 1-Click: Assign ALL 18 Standard National Courses
-  const handleAssignAllStandardProgram = async () => {
-    const allIds = STANDARD_PRIMARY_COURSES.map((c) => c.id);
-    await bulkAssignMutation.mutateAsync({
-      cours_ids: allIds,
-      classe_id: selectedClasseId,
-      enseignant_id: selectedClasse?.titulaire_id || PROF_SHASA_ID,
-    });
   };
 
   // Bulk Domain Assignment
@@ -169,7 +156,7 @@ export default function AdminSchoolsPage() {
       await bulkAssignMutation.mutateAsync({
         cours_ids: domain.courseIds,
         classe_id: selectedClasseId,
-        enseignant_id: selectedClasse?.titulaire_id || PROF_SHASA_ID,
+        enseignant_id: selectedClasse?.titulaire_id || '',
       });
     } else {
       await bulkUnassignMutation.mutateAsync({
@@ -191,12 +178,10 @@ export default function AdminSchoolsPage() {
     (a) => a.classe_id === selectedClasseId && a.est_actif !== false
   );
 
-  const totalPossibleCourses = STANDARD_PRIMARY_COURSES.length;
   const assignedRatio = activeAssignmentsForClass.length;
-  const coveragePercent = Math.round((assignedRatio / Math.max(totalPossibleCourses, 1)) * 100);
 
   const titulaireTeacher = (teachers || []).find((t) => t.id === selectedClasse?.titulaire_id);
-  const titulaireNom = titulaireTeacher?.nom_complet || 'Prof. Shasa Kanyinda';
+  const titulaireNom = titulaireTeacher?.nom_complet || 'Non Assigné';
 
   return (
     <RoleGuard allowedRoles={['super_admin', 'admin']} moduleName="la gestion des Classes & Établissements">
@@ -309,37 +294,8 @@ export default function AdminSchoolsPage() {
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleAssignAllStandardProgram}
-                  disabled={bulkAssignMutation.isPending}
-                  className="px-4 py-2.5 bg-[#008080] hover:bg-[#008080]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 text-xs"
-                >
-                  <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                  <span>Assigner tout le Programme National (18 cours)</span>
-                </button>
-              </div>
             </div>
 
-            {/* Coverage Progress Bar */}
-            <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0] space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-[#0F2C59] flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-[#D4AF37]" />
-                  Couverture du Programme National
-                </span>
-                <span className="text-[#008080]">
-                  {assignedRatio} sur {totalPossibleCourses} cours actifs ({coveragePercent}%)
-                </span>
-              </div>
-              <div className="w-full bg-[#E2E8F0] h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-linear-to-r from-[#008080] to-[#D4AF37] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(coveragePercent, 100)}%` }}
-                />
-              </div>
-            </div>
 
             {/* Search & Domain Filter Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
@@ -388,15 +344,14 @@ export default function AdminSchoolsPage() {
               (domain) => selectedDomainFilter === 'all' || selectedDomainFilter === domain.id
             ).map((domain) => {
               const isCollapsed = !!collapsedDomains[domain.id];
-              const domainCourses = STANDARD_PRIMARY_COURSES.filter((c) =>
+              const domainCourses = (courses || []).filter((c) =>
                 domain.courseIds.includes(c.id)
               );
 
               // Filter by search text if present
               const visibleCourses = domainCourses.filter((c) =>
                 assignmentSearch
-                  ? c.titre.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
-                    c.matiere.toLowerCase().includes(assignmentSearch.toLowerCase())
+                  ? c.titre?.toLowerCase().includes(assignmentSearch.toLowerCase())
                   : true
               );
 
@@ -410,7 +365,7 @@ export default function AdminSchoolsPage() {
                 )
               ).length;
 
-              const allDomainAssigned = assignedInDomain === domainCourses.length;
+              const allDomainAssigned = domainCourses.length > 0 && assignedInDomain === domainCourses.length;
 
               return (
                 <div
@@ -496,7 +451,7 @@ export default function AdminSchoolsPage() {
                             <div>
                               <div className="flex items-start justify-between gap-2">
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-[#475569] border border-[#E2E8F0]">
-                                  {course.matiere}
+                                  {course.titre}
                                 </span>
                                 <span
                                   className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
@@ -519,9 +474,6 @@ export default function AdminSchoolsPage() {
                               <h4 className="font-extrabold text-sm text-[#0F2C59] mt-2.5">
                                 {course.titre}
                               </h4>
-                              <p className="text-[10px] text-[#64748B] mt-0.5 font-medium">
-                                Code national : {course.code}
-                              </p>
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-[#F1F5F9] flex items-center justify-between text-xs">
@@ -547,11 +499,11 @@ export default function AdminSchoolsPage() {
       {/* ============================================================ */}
       {activeTab === 'classes' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(classes || []).map((cl) => {
+          {(classes || []).map((cl, index) => {
             const countAssigned = (assignments || []).filter(
               (a) => a.classe_id === cl.id && a.est_actif !== false
             ).length;
-            const isPrimary = cl.id === PRIMARY_CLASS_ID;
+            const isPrimary = index === 0;
 
             return (
               <div
@@ -695,7 +647,7 @@ export default function AdminSchoolsPage() {
                   onChange={(e) => setClassTitulaireId(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30 text-[#1E293B]"
                 >
-                  <option value={PROF_SHASA_ID}>Prof. Shasa Kanyinda (Recommandé)</option>
+                  <option value="">Sélectionner un titulaire (optionnel)</option>
                   {(teachers || []).map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nom_complet}

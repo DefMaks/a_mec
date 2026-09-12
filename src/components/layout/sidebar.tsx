@@ -8,6 +8,7 @@ import { useRole } from '@/context/role-context';
 import { useSidebar } from '@/context/sidebar-context';
 import { RoleSwitcher } from './role-switcher';
 import { APP_NAME, APP_SHORT_NAME, isProduction } from '@/lib/config';
+import { useNavigationLoading } from '@/context/navigation-transition-context';
 import {
   LayoutDashboard,
   Users,
@@ -26,6 +27,7 @@ import {
   Layers,
   Image as ImageIcon,
   UserPlus,
+  Loader2,
 } from 'lucide-react';
 
 interface NavItem {
@@ -44,6 +46,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { roleInfo, isSuperAdmin, isAdmin, isTeacher, isParent } = useRole();
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const { pendingPath, isNavigating } = useNavigationLoading();
 
   let sections: NavSection[] = [];
 
@@ -211,6 +214,7 @@ export function Sidebar() {
             )}
             {section.items.map((item) => {
               const isActive = pathname === item.href;
+              const isPending = isNavigating && pendingPath === item.href && !isActive;
               const Icon = item.icon;
               return (
                 <Link
@@ -223,28 +227,41 @@ export function Sidebar() {
                   } rounded-xl text-xs font-medium transition-all group ${
                     isActive
                       ? 'bg-[#EFF6FF] text-[#0F2C59] font-bold border-l-4 border-[#D4AF37] shadow-xs'
+                      : isPending
+                      ? 'bg-[#EFF6FF]/70 text-[#0F2C59] font-semibold border-l-4 border-[#D4AF37] animate-pulse'
                       : 'text-[#64748B] hover:text-[#0F2C59] hover:bg-[#F1F5F9]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon
-                      className={`w-4 h-4 flex-shrink-0 transition-colors ${
-                        isActive ? 'text-[#0F2C59]' : 'text-[#64748B] group-hover:text-[#0F2C59]'
-                      }`}
-                    />
+                    {isPending && isCollapsed ? (
+                      <Loader2 className="w-4 h-4 flex-shrink-0 text-[#D4AF37] animate-spin" />
+                    ) : (
+                      <Icon
+                        className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                          isActive || isPending ? 'text-[#0F2C59]' : 'text-[#64748B] group-hover:text-[#0F2C59]'
+                        }`}
+                      />
+                    )}
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </div>
 
-                  {!isCollapsed && item.badge && (
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                        isActive
-                          ? 'bg-[#0F2C59] text-[#D4AF37]'
-                          : 'bg-[#F1F5F9] text-[#64748B] group-hover:bg-[#E2E8F0]'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
+                  {!isCollapsed && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {isPending && (
+                        <Loader2 className="w-3.5 h-3.5 text-[#D4AF37] animate-spin flex-shrink-0" />
+                      )}
+                      {item.badge && !isPending && (
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                            isActive
+                              ? 'bg-[#0F2C59] text-[#D4AF37]'
+                              : 'bg-[#F1F5F9] text-[#64748B] group-hover:bg-[#E2E8F0]'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </Link>
               );

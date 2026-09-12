@@ -29,48 +29,8 @@ export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
         console.error('Erreur chargement students:', err?.message);
       }
 
-      // Si aucune donnée distante, proposer les élèves par défaut de l'Académie
-      if (rawData.length === 0) {
-        const defaultLastUpdate = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
-        const defaultExpiration = new Date(Date.now() + 28 * 24 * 3600 * 1000).toISOString();
-
-        rawData = [
-          {
-            id: 'child-1',
-            nom_complet: 'Joel Mukendi',
-            pseudonyme: 'Joel M.',
-            matricule: 'ADS-2025-0042',
-            code_acces: 'ADS-7842',
-            code_acces_actif: true,
-            derniere_mise_a_jour_code: defaultLastUpdate,
-            date_expiration_code: defaultExpiration,
-            forfait_actif: 'mensuel',
-            classe_id: 'classe-4eme-math',
-            classe: '4ème Humanités Math-Physique',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'child-2',
-            nom_complet: 'Sarah Kabongo Mukendi',
-            pseudonyme: 'Sarah K.',
-            matricule: 'ADS-2025-0089',
-            code_acces: 'ADS-3319',
-            code_acces_actif: true,
-            derniere_mise_a_jour_code: defaultLastUpdate,
-            date_expiration_code: defaultExpiration,
-            forfait_actif: 'mensuel',
-            classe_id: 'classe-6eme-prim',
-            classe: '6ème Primaire (TENAFEP)',
-            created_at: new Date().toISOString(),
-          },
-        ];
-      }
-
       // Récupérer les classes pour afficher le libellé de classe
-      let classesMap: Record<string, string> = {
-        'classe-4eme-math': '4ème Humanités Math-Physique',
-        'classe-6eme-prim': '6ème Primaire (TENAFEP)',
-      };
+      let classesMap: Record<string, string> = {};
       try {
         const { data: clsData } = await supabase.from('classes').select('id, niveau_id, option_id, vacation');
         if (clsData) {
@@ -202,13 +162,7 @@ export function useCreateStudent() {
         .single();
 
       if (error) {
-        // Fallback local
-        const localStudent = {
-          id: `child-${Date.now()}`,
-          ...insertPayload,
-          created_at: now.toISOString(),
-        };
-        return localStudent;
+        throw new Error(error.message);
       }
       return data;
     },

@@ -85,16 +85,18 @@ export interface TeacherAssignmentData {
 
 /**
  * 2.1 Récupérer le professeur connecté ("me")
- * Simulation active pour l'utilisateur auth: b6416211-0e05-4432-85e9-c5b3b243e543 (Professeur Shasa)
  */
 export async function getTeacherMe(): Promise<TeacherMeInfo | null> {
   const supabase = getSupabaseBrowserClient();
-  const SHASA_USER_ID = 'b6416211-0e05-4432-85e9-c5b3b243e543';
 
   try {
     const { data: authData } = await supabase.auth.getUser();
     const user = authData?.user;
-    const targetUserId = user?.id || SHASA_USER_ID;
+
+    if (!user) {
+      return null;
+    }
+    const targetUserId = user.id;
 
     let profile: any = null;
 
@@ -122,45 +124,8 @@ export async function getTeacherMe(): Promise<TeacherMeInfo | null> {
       }
     }
 
-    // 3. Chercher par nom "Shasa"
     if (!profile) {
-      const { data: pDataShasa } = await supabase
-        .from('profiles')
-        .select('id, user_id, nom_complet, email, role, ecole_id')
-        .ilike('nom_complet', '%Shasa%')
-        .maybeSingle();
-
-      if (pDataShasa) {
-        profile = pDataShasa;
-      }
-    }
-
-    // 4. Fallback vers le premier profil enseignant
-    if (!profile) {
-      const { data: teacherProfiles } = await supabase
-        .from('profiles')
-        .select('id, user_id, nom_complet, email, role, ecole_id')
-        .eq('role', 'teacher')
-        .limit(1);
-
-      if (teacherProfiles && teacherProfiles.length > 0) {
-        profile = teacherProfiles[0];
-      }
-    }
-
-    if (!profile) {
-      return {
-        authUserId: targetUserId,
-        profileId: targetUserId,
-        nomComplet: 'Professeur Shasa',
-        email: 'shasa@academiedusalut.cd',
-        role: 'teacher',
-        ecole: { id: DEFAULT_SCHOOL_ID, nom: 'Académie du Salut (ADS)' },
-        teacherMeta: {
-          teacherId: targetUserId,
-          specialite: 'STEM / Math-Physique & TICE',
-        },
-      };
+      return null;
     }
 
     // Récupérer l'école
@@ -196,31 +161,20 @@ export async function getTeacherMe(): Promise<TeacherMeInfo | null> {
     }
 
     return {
-      authUserId: user?.id || profile.user_id || targetUserId,
+      authUserId: user.id,
       profileId: profile.id,
-      nomComplet: profile.nom_complet || 'Professeur Shasa',
-      email: profile.email || 'shasa@academiedusalut.cd',
+      nomComplet: profile.nom_complet || 'Enseignant',
+      email: profile.email || '',
       role: profile.role || 'teacher',
-      ecole: ecoleData ? { id: ecoleData.id, nom: ecoleData.nom } : { id: DEFAULT_SCHOOL_ID, nom: 'Académie du Salut (ADS)' },
+      ecole: ecoleData ? { id: ecoleData.id, nom: ecoleData.nom } : null,
       teacherMeta: teacherMetaData || {
         teacherId: profile.id,
-        specialite: 'STEM / Math-Physique & TICE',
+        specialite: '',
       },
     };
   } catch (err: any) {
     console.warn('Erreur chargement getTeacherMe:', err?.message);
-    return {
-      authUserId: SHASA_USER_ID,
-      profileId: SHASA_USER_ID,
-      nomComplet: 'Professeur Shasa',
-      email: 'shasa@academiedusalut.cd',
-      role: 'teacher',
-      ecole: { id: DEFAULT_SCHOOL_ID, nom: 'Académie du Salut (ADS)' },
-      teacherMeta: {
-        teacherId: SHASA_USER_ID,
-        specialite: 'STEM / Math-Physique & TICE',
-      },
-    };
+    return null;
   }
 }
 
@@ -403,11 +357,32 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
 
       const teacherId = profileId;
       const coursClasseIds = fetchedCours.map(c => c.classe_id).filter(Boolean) as string[];
+      let assignedClasseIds = [...coursClasseIds];
+
+      // Récupérer les classes où le professeur est affecté (table classe_professeur)
+      if (teacherId) {
+        try {
+          const { data: cpData } = await supabase
+            .from('classe_professeur')
+            .select('classe_id')
+            .eq('professeur_id', teacherId);
+          if (cpData && cpData.length > 0) {
+            cpData.forEach((row: any) => {
+              if (row.classe_id && !assignedClasseIds.includes(row.classe_id)) {
+                assignedClasseIds.push(row.classe_id);
+              }
+            });
+          }
+        } catch {
+          // Table optionnelle selon la migration
+        }
+      }
 
       let classesQuery = supabase
         .from('classes')
         .select(`
           id,
+          nom,
           vacation,
           niveau_id,
           option_id,
@@ -418,8 +393,8 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
         .order('created_at', { ascending: false });
 
       if (teacherId) {
-         if (coursClasseIds.length > 0) {
-           classesQuery = classesQuery.or(`titulaire_id.eq.${teacherId},id.in.(${coursClasseIds.join(',')})`);
+         if (assignedClasseIds.length > 0) {
+           classesQuery = classesQuery.or(`titulaire_id.eq.${teacherId},id.in.(${assignedClasseIds.join(',')})`);
          } else {
            classesQuery = classesQuery.eq('titulaire_id', teacherId);
          }
@@ -431,7 +406,7 @@ export function useTeacherAssignments(profileId: string | null | undefined) {
         classes = cData.map((cls: any) => {
           const niv = cls.niveaux?.nom || cls.niveaux?.code || '';
           const opt = cls.options?.nom || cls.options?.code || '';
-          const label = [niv, opt].filter(Boolean).join(' - ') || `Classe #${cls.id.slice(0, 6)}`;
+          const label = cls.nom || [niv, opt].filter(Boolean).join(' - ') || `Classe #${cls.id.slice(0, 6)}`;
           return {
             id: cls.id,
             nom: label,

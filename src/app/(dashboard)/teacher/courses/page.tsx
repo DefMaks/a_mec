@@ -34,6 +34,7 @@ import {
 import { TipTapEditor } from '@/components/editor/tiptap-editor';
 import { RichTextView } from '@/components/editor/rich-text-view';
 import { RoleGuard } from '@/components/layout/role-guard';
+import { stripHtmlTags } from '@/lib/html-utils';
 
 export default function TeacherCoursesPage() {
   const { data: me, isLoading: loadingMe } = useTeacherMe();
@@ -434,8 +435,8 @@ export default function TeacherCoursesPage() {
                     </div>
 
                     {/* Content Preview */}
-                    <p className="text-xs text-[#475569] mt-2.5 line-clamp-2 bg-[#F8FAFC] p-2.5 rounded-xl border border-[#F1F5F9]">
-                      {ch.contenu_html || ch.contenu || 'Aucun résumé textuel fourni.'}
+                    <p className="text-xs text-[#475569] mt-2.5 line-clamp-2 bg-[#F8FAFC] p-2.5 rounded-xl border border-[#F1F5F9] leading-relaxed">
+                      {stripHtmlTags(ch.contenu_html || ch.contenu) || 'Aucun résumé textuel fourni.'}
                     </p>
                   </div>
 
@@ -534,8 +535,8 @@ export default function TeacherCoursesPage() {
                       {crs.titre}
                     </h3>
 
-                    <p className="text-xs text-[#64748B] line-clamp-3">
-                      {crs.description || 'Aucune description fournie pour ce cours.'}
+                    <p className="text-xs text-[#64748B] line-clamp-3 leading-relaxed">
+                      {stripHtmlTags(crs.description) || 'Aucune description fournie pour ce cours.'}
                     </p>
                   </div>
 

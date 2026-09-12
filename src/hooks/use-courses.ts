@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
-import { getInitialAssignments, PRIMARY_CLASS_ID, PROF_SHASA_ID } from './use-course-assignments';
+import { getInitialAssignments } from './use-course-assignments';
 
 export interface ChapterItem {
   id: string;
@@ -108,10 +108,10 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
             matiere_id: item.matiere_id,
             matiere_nom: matiereNom,
             matiere: matiereNom,
-            classe: assignedClasse ? '1ère Primaire' : item.classe || '1ère Primaire',
-            classe_id: assignedClasse?.classe_id || PRIMARY_CLASS_ID,
-            enseignant_id: assignedClasse?.enseignant_id || PROF_SHASA_ID,
-            enseignant_nom: 'Prof. Shasa Kanyinda',
+            classe: assignedClasse ? 'Classe' : item.classe || 'Classe',
+            classe_id: assignedClasse?.classe_id || '',
+            enseignant_id: assignedClasse?.enseignant_id || '',
+            enseignant_nom: 'Enseignant',
             chapitres_count: chapitres.length,
             chapitres: chapitres,
             created_at: item.created_at || new Date().toISOString(),
@@ -191,14 +191,14 @@ export function useCreateCourse() {
       // Assigner à la table cours_classes
       const targetClasses = courseData.target_classe_ids && courseData.target_classe_ids.length > 0
         ? courseData.target_classe_ids
-        : [courseData.classe_id || PRIMARY_CLASS_ID];
+        : (courseData.classe_id ? [courseData.classe_id] : []);
 
       const currentAssignments = getInitialAssignments();
       const newAssignments = targetClasses.map((clId) => ({
         id: `assign-${insertedCourse.id}-${clId}-${Date.now()}`,
         cours_id: insertedCourse.id,
         classe_id: clId,
-        enseignant_id: courseData.enseignant_id || PROF_SHASA_ID,
+        enseignant_id: courseData.enseignant_id || '',
         est_actif: true,
         annee_scolaire: '2025-2026',
         created_at: new Date().toISOString(),

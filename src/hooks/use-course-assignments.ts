@@ -3,31 +3,6 @@ import { createClient } from '@/lib/supabase/client';
 import { CoursClasse, Cours, Classe, Profile } from '@/types/database.types';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
-export const PRIMARY_CLASS_ID = '730145b3-b30f-4aff-b0ab-c7550849d5fe';
-export const PROF_SHASA_ID = 'b6416211-0e05-4432-85e9-c5b3b243e543';
-
-// 18 cours de base 1ère Primaire
-export const STANDARD_PRIMARY_COURSES = [
-  { id: '98656796-d9d1-4de6-83d7-7302f4ad8d21', titre: 'Lecture', code: 'RDC-PRIM-LNAT-LECT', matiere: 'Langues Nationales', domaine: 'Langues & Communication' },
-  { id: 'ce832303-22f4-4bfe-93d3-d8b27becc142', titre: 'Écriture / Graphisme', code: 'RDC-PRIM-LNAT-ECRI', matiere: 'Langues Nationales', domaine: 'Langues & Communication' },
-  { id: 'cfc2ee53-321e-4855-b528-53c460dfe25a', titre: 'Expression orale / Langage', code: 'RDC-PRIM-LNAT-ORAL', matiere: 'Langues Nationales', domaine: 'Langues & Communication' },
-  { id: '2d121977-a258-4fe9-97f5-34ab0bbd2a07', titre: 'Français Expression Orale', code: 'RDC-PRIM-FRAN-ORAL', matiere: 'Français', domaine: 'Langues & Communication' },
-  { id: '8e1257b9-174f-418e-990a-609dadbefcd2', titre: 'Français Vocabulaire', code: 'RDC-PRIM-FRAN-VOCB', matiere: 'Français', domaine: 'Langues & Communication' },
-  { id: 'd795462b-18ed-4ac4-b1d5-126796273389', titre: 'Calcul', code: 'RDC-PRIM-MATH-CALC', matiere: 'Mathématiques', domaine: 'Mathématiques & Sciences' },
-  { id: '5681f0fa-bc21-495c-a219-b09162372829', titre: 'Géométrie', code: 'RDC-PRIM-MATH-GEOM', matiere: 'Mathématiques', domaine: 'Mathématiques & Sciences' },
-  { id: '0430841f-f4cc-4e3d-977f-91b6adf37139', titre: 'Mesure', code: 'RDC-PRIM-MATH-MESU', matiere: 'Mathématiques', domaine: 'Mathématiques & Sciences' },
-  { id: '181e884f-b0af-4861-a8df-eb793e2435cb', titre: 'Observation', code: 'RDC-PRIM-ENV-OBSV', matiere: 'Étude du Milieu', domaine: 'Éveil Scientifique & Environnement' },
-  { id: '163fa90d-d812-4760-a268-64eeaf80e5be', titre: 'Hygiène & Santé', code: 'RDC-PRIM-ENV-HYGI', matiere: 'Étude du Milieu', domaine: 'Éveil Scientifique & Environnement' },
-  { id: '28ff3596-4a96-4b8c-8aae-4b01008e3a8f', titre: 'Civisme & Citoyenneté', code: 'RDC-PRIM-SOC-CIVI', matiere: 'Éducation Civique & Morale', domaine: 'Sciences Sociales & Civisme' },
-  { id: 'fa0eedb7-9f9e-43a4-901a-771c0c7fea54', titre: 'Morale & Valeurs', code: 'RDC-PRIM-SOC-MORA', matiere: 'Éducation Civique & Morale', domaine: 'Sciences Sociales & Civisme' },
-  { id: '65bad74c-0c39-4a8e-9df1-1aa121da5849', titre: 'Milieu Social & Famille', code: 'RDC-PRIM-SOC-MILI', matiere: 'Sciences Sociales', domaine: 'Sciences Sociales & Civisme' },
-  { id: '45ec3ccc-dca8-4a41-9536-8dc31dd80d26', titre: 'Notion du Temps & Histoire', code: 'RDC-PRIM-SOC-TEMP', matiere: 'Sciences Sociales', domaine: 'Sciences Sociales & Civisme' },
-  { id: '9741388b-1d36-4232-b87b-e38c3eae88db', titre: 'Psychomotricité et Jeux', code: 'RDC-PRIM-ACT-PSYC', matiere: 'Activités Physiques', domaine: 'Arts & Activités Pratiques' },
-  { id: 'a2b8c267-4467-4bb8-8637-7bdfbbae68b7', titre: 'Dessin et Coloriage', code: 'RDC-PRIM-ACT-DESS', matiere: 'Arts Plastiques', domaine: 'Arts & Activités Pratiques' },
-  { id: '9190d42b-33c7-44d5-b989-f856504536ad', titre: 'Chant et Musique', code: 'RDC-PRIM-ACT-CHAN', matiere: 'Arts Plastiques', domaine: 'Arts & Activités Pratiques' },
-  { id: 'e58247ed-6ff8-403e-8bbc-f3f168003219', titre: 'Travaux Manuels', code: 'RDC-PRIM-ACT-MANU', matiere: 'Arts Plastiques', domaine: 'Arts & Activités Pratiques' },
-];
-
 export interface LearningDomain {
   id: string;
   nom: string;
@@ -113,33 +88,7 @@ const LOCAL_STORAGE_KEY = 'e_rdc_cours_classes_assignments';
 const LOCAL_CLASSES_KEY = 'e_rdc_custom_classes';
 
 export function getInitialAssignments(): CoursClasse[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {}
-  }
-
-  // Assignations par défaut : Tous les 18 cours assignés à la 1ère Primaire avec Prof. Shasa
-  const defaults: CoursClasse[] = STANDARD_PRIMARY_COURSES.map((c) => ({
-    id: `assign-${c.id}-${PRIMARY_CLASS_ID}`,
-    cours_id: c.id,
-    classe_id: PRIMARY_CLASS_ID,
-    enseignant_id: PROF_SHASA_ID,
-    est_actif: true,
-    annee_scolaire: '2025-2026',
-    created_at: new Date().toISOString(),
-  }));
-
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaults));
-    } catch {}
-  }
-
-  return defaults;
+  return [];
 }
 
 export function saveAssignmentsLocally(assignments: CoursClasse[]) {
@@ -168,12 +117,12 @@ export function useCourseAssignments(classeId?: string) {
         }
 
         const { data, error } = await query;
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           assignments = data as CoursClasse[];
           saveAssignmentsLocally(assignments);
         }
       } catch (e) {
-        // Fallback localement
+        // Ignorer l'erreur
       }
 
       if (classeId) {
@@ -197,7 +146,7 @@ export function useAssignCourseToClass() {
     mutationFn: async ({
       cours_id,
       classe_id,
-      enseignant_id = PROF_SHASA_ID,
+      enseignant_id = '',
       annee_scolaire = '2025-2026',
     }: {
       cours_id: string;
@@ -296,7 +245,7 @@ export function useBulkAssignCourses() {
     mutationFn: async ({
       cours_ids,
       classe_id,
-      enseignant_id = PROF_SHASA_ID,
+      enseignant_id = '',
       annee_scolaire = '2025-2026',
     }: {
       cours_ids: string[];
@@ -416,11 +365,10 @@ export function useAllClasses() {
           .from('classes')
           .select('*, niveaux(*), profiles(*)');
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped = data.map((c: any) => ({
             ...c,
             nom: c.name || c.nom || 'Classe',
-            titulaire_id: c.titulaire_id || PROF_SHASA_ID,
           })) as Classe[];
 
           const merged = [...mapped];
@@ -433,17 +381,7 @@ export function useAllClasses() {
         }
       } catch {}
 
-      return [
-        {
-          id: PRIMARY_CLASS_ID,
-          nom: '1ère Primaire',
-          ecole_id: DEFAULT_SCHOOL_ID,
-          niveau_id: '53b37e2f-110b-4551-ac31-e018305f74d5',
-          titulaire_id: PROF_SHASA_ID,
-          created_at: '2026-03-03T09:57:39.563762+00:00',
-        },
-        ...customClasses,
-      ] as Classe[];
+      return customClasses;
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -460,7 +398,7 @@ export function useCreateAdminClass() {
     mutationFn: async ({
       nom,
       niveau_id = '53b37e2f-110b-4551-ac31-e018305f74d5',
-      titulaire_id = PROF_SHASA_ID,
+      titulaire_id = '',
       ecole_id = DEFAULT_SCHOOL_ID,
     }: {
       nom: string;

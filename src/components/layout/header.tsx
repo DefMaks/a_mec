@@ -77,7 +77,7 @@ export function Header() {
               <div className="divide-y divide-[#F1F5F9] text-xs">
                 <div className="py-2.5">
                   <p className="font-semibold text-[#0F2C59]">Paiement Minerval Validé</p>
-                  <p className="text-[#64748B] text-[11px] mt-0.5">3 nouveaux règlements Mobile Money reçus aujourd'hui.</p>
+                  <p className="text-[#64748B] text-[11px] mt-0.5">3 nouveaux règlements Mobile Money reçus aujourd&apos;hui.</p>
                 </div>
                 <div className="py-2.5">
                   <p className="font-semibold text-[#0F2C59]">Quiz TENAFEP & EXETAT</p>
