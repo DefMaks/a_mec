@@ -10,9 +10,6 @@ import {
   useUnassignCourseFromClass,
   useBulkAssignCourses,
   useBulkUnassignCourses,
-  PRIMARY_CLASS_ID,
-  PROF_SHASA_ID,
-  STANDARD_PRIMARY_COURSES,
   LEARNING_DOMAINS,
   LearningDomain,
 } from '@/hooks/use-course-assignments';
@@ -54,7 +51,7 @@ export default function AdminSchoolsPage() {
   const createCourseMutation = useCreateCourse();
 
   const [activeTab, setActiveTab] = useState<'classes' | 'assignments' | 'schools'>('assignments');
-  const [selectedClasseId, setSelectedClasseId] = useState<string>(PRIMARY_CLASS_ID);
+  const [selectedClasseId, setSelectedClasseId] = useState<string>('');
 
   const { data: assignments } = useCourseAssignments();
   const assignMutation = useAssignCourseToClass();
@@ -73,12 +70,12 @@ export default function AdminSchoolsPage() {
   const [schoolIdNat, setSchoolIdNat] = useState('');
 
   const [classNom, setClassNom] = useState('');
-  const [classTitulaireId, setClassTitulaireId] = useState(PROF_SHASA_ID);
+  const [classTitulaireId, setClassTitulaireId] = useState('');
 
   const [courseTitre, setCourseTitre] = useState('');
   const [courseMatiereNom, setCourseMatiereNom] = useState('Mathématiques');
   const [courseDescription, setCourseDescription] = useState('');
-  const [courseTargetClasses, setCourseTargetClasses] = useState<string[]>([PRIMARY_CLASS_ID]);
+  const [courseTargetClasses, setCourseTargetClasses] = useState<string[]>([]);
 
   // Filter
   const [assignmentSearch, setAssignmentSearch] = useState('');
@@ -128,7 +125,7 @@ export default function AdminSchoolsPage() {
       matiere: courseMatiereNom,
       matiere_nom: courseMatiereNom,
       target_classe_ids: courseTargetClasses,
-      enseignant_id: PROF_SHASA_ID,
+      enseignant_id: undefined,
     });
 
     setCourseTitre('');
@@ -148,18 +145,18 @@ export default function AdminSchoolsPage() {
       await assignMutation.mutateAsync({
         cours_id: courseId,
         classe_id: selectedClasseId,
-        enseignant_id: PROF_SHASA_ID,
+        enseignant_id: undefined,
       });
     }
   };
 
   // 1-Click: Assign ALL 18 Standard National Courses
   const handleAssignAllStandardProgram = async () => {
-    const allIds = STANDARD_PRIMARY_COURSES.map((c) => c.id);
+    const allIds = courses ? courses.map(c => c.id) : [];
     await bulkAssignMutation.mutateAsync({
       cours_ids: allIds,
       classe_id: selectedClasseId,
-      enseignant_id: selectedClasse?.titulaire_id || PROF_SHASA_ID,
+      enseignant_id: selectedClasse?.titulaire_id || undefined,
     });
   };
 
@@ -169,7 +166,7 @@ export default function AdminSchoolsPage() {
       await bulkAssignMutation.mutateAsync({
         cours_ids: domain.courseIds,
         classe_id: selectedClasseId,
-        enseignant_id: selectedClasse?.titulaire_id || PROF_SHASA_ID,
+        enseignant_id: selectedClasse?.titulaire_id || undefined,
       });
     } else {
       await bulkUnassignMutation.mutateAsync({
@@ -191,12 +188,12 @@ export default function AdminSchoolsPage() {
     (a) => a.classe_id === selectedClasseId && a.est_actif !== false
   );
 
-  const totalPossibleCourses = STANDARD_PRIMARY_COURSES.length;
+  const totalPossibleCourses = courses ? courses.length : 0;
   const assignedRatio = activeAssignmentsForClass.length;
   const coveragePercent = Math.round((assignedRatio / Math.max(totalPossibleCourses, 1)) * 100);
 
   const titulaireTeacher = (teachers || []).find((t) => t.id === selectedClasse?.titulaire_id);
-  const titulaireNom = titulaireTeacher?.nom_complet || 'Prof. Shasa Kanyinda';
+  const titulaireNom = titulaireTeacher?.nom_complet || '';
 
   return (
     <RoleGuard allowedRoles={['super_admin', 'admin']} moduleName="la gestion des Classes & Établissements">
@@ -388,15 +385,21 @@ export default function AdminSchoolsPage() {
               (domain) => selectedDomainFilter === 'all' || selectedDomainFilter === domain.id
             ).map((domain) => {
               const isCollapsed = !!collapsedDomains[domain.id];
-              const domainCourses = STANDARD_PRIMARY_COURSES.filter((c) =>
-                domain.courseIds.includes(c.id)
-              );
+              const domainCourses = courses ? courses.filter(c => {
+    const searchString = ((c as any).matiere || (c as any).titre || "").toLowerCase();
+    if (domain.id === 'langues') return searchString.includes('langue') || searchString.includes('français') || searchString.includes('lecture') || searchString.includes('ecriture');
+    if (domain.id === 'maths') return searchString.includes('math') || searchString.includes('calcul') || searchString.includes('mesure');
+    if (domain.id === 'eveil') return searchString.includes('eveil') || searchString.includes('science') || searchString.includes('nature');
+    if (domain.id === 'social') return searchString.includes('social') || searchString.includes('civisme') || searchString.includes('histoire');
+    if (domain.id === 'arts_sports') return searchString.includes('art') || searchString.includes('sport') || searchString.includes('physique') || searchString.includes('dessin');
+    return false;
+  }) : [];
 
               // Filter by search text if present
               const visibleCourses = domainCourses.filter((c) =>
                 assignmentSearch
                   ? c.titre.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
-                    c.matiere.toLowerCase().includes(assignmentSearch.toLowerCase())
+                    (c.matiere || "").toLowerCase().includes(assignmentSearch.toLowerCase())
                   : true
               );
 
@@ -520,7 +523,7 @@ export default function AdminSchoolsPage() {
                                 {course.titre}
                               </h4>
                               <p className="text-[10px] text-[#64748B] mt-0.5 font-medium">
-                                Code national : {course.code}
+
                               </p>
                             </div>
 
@@ -551,7 +554,7 @@ export default function AdminSchoolsPage() {
             const countAssigned = (assignments || []).filter(
               (a) => a.classe_id === cl.id && a.est_actif !== false
             ).length;
-            const isPrimary = cl.id === PRIMARY_CLASS_ID;
+            const isPrimary = false;
 
             return (
               <div
@@ -695,7 +698,7 @@ export default function AdminSchoolsPage() {
                   onChange={(e) => setClassTitulaireId(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30 text-[#1E293B]"
                 >
-                  <option value={PROF_SHASA_ID}>Prof. Shasa Kanyinda (Recommandé)</option>
+                  <option value=''>-- Sélectionner un enseignant --</option>
                   {(teachers || []).map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nom_complet}

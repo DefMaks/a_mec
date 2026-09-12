@@ -1,12 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { SessionResponse, SessionRole } from '@/types/session.types';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
-import {
-  PRIMARY_CLASS_ID,
-  PROF_SHASA_ID,
-  STANDARD_PRIMARY_COURSES,
-  getInitialAssignments,
-} from '@/hooks/use-course-assignments';
 
 export interface StudentSessionJSON {
   user: {
@@ -62,22 +56,12 @@ export interface StudentSessionJSON {
 export function generateStudentSessionData(
   eleveOverride?: Partial<StudentSessionJSON['user']>
 ): StudentSessionJSON {
-  const assignments = getInitialAssignments();
+  const assignments: any[] = [];
   const primaryAssignments = assignments.filter(
-    (a) => a.classe_id === PRIMARY_CLASS_ID && a.est_actif !== false
+    (a) => a.classe_id === null && a.est_actif !== false
   );
 
-  const assignedCourses = STANDARD_PRIMARY_COURSES.filter((c) =>
-    primaryAssignments.some((a) => a.cours_id === c.id)
-  ).map((c) => ({
-    id: c.id,
-    titre: c.titre,
-    matiere: c.matiere,
-    classe_id: PRIMARY_CLASS_ID,
-    enseignant_id: PROF_SHASA_ID,
-    enseignant: 'Prof. Shasa Kanyinda',
-    chapitres_count: 0,
-  }));
+  const assignedCourses: any[] = [];
 
   return {
     user: {
@@ -85,18 +69,18 @@ export function generateStudentSessionData(
       role: 'student',
       pseudonyme: eleveOverride?.pseudonyme || 'Joe',
       code_acces: eleveOverride?.code_acces || '0123456789',
-      classe_id: eleveOverride?.classe_id || PRIMARY_CLASS_ID,
+      classe_id: eleveOverride?.classe_id as string,
       parent_id: eleveOverride?.parent_id || 'ff3f802f-ac54-455d-a660-fc265d220113',
       created_at: '2026-03-03T10:50:39.377073+00:00',
     },
     classe: {
-      id: PRIMARY_CLASS_ID,
+      id: null as any,
       nom: '1ère Année Primaire',
       ecole_id: DEFAULT_SCHOOL_ID,
       niveau: 'Primaire',
       section: 'Fondamentale',
       option: 'Générale',
-      titulaire_id: PROF_SHASA_ID,
+      titulaire_id: null as any,
       titulaire: 'Prof. Shasa Kanyinda',
     },
     ecole: {
@@ -183,14 +167,14 @@ export async function fetchSessionDichotomy(
           id: actualUserId || 'superadmin-uuid',
           role: 'super_admin',
           nom_complet: 'Super Administrateur ADS',
-          ecole_id: null,
+          ecole_id: null as any,
         },
         classes: classes || [],
         eleves: eleves || [],
         classe_professeur: (profiles || [])
           .filter((p) => p.role === 'teacher')
           .map((p) => ({
-            classe_id: classes?.[0]?.id || PRIMARY_CLASS_ID,
+            classe_id: classes?.[0]?.id || null,
             professeur_id: p.id,
             role_professeur: 'enseignant_principal',
             professeur_nom: p.nom_complet,
@@ -236,8 +220,8 @@ export async function fetchSessionDichotomy(
         eleves: eleves || [],
         classe_professeur: [
           {
-            classe_id: classes?.[0]?.id || PRIMARY_CLASS_ID,
-            professeur_id: PROF_SHASA_ID,
+            classe_id: classes?.[0]?.id || null,
+            professeur_id: null as any,
             role_professeur: 'enseignant_titulaire',
           },
         ],
@@ -251,7 +235,7 @@ export async function fetchSessionDichotomy(
 
     // 3. TEACHER - Voit ses classes + l'activité de leurs élèves
     if (role === 'teacher') {
-      const teacherId = actualUserId || PROF_SHASA_ID;
+      const teacherId = actualUserId || '';
 
       // Récupérer le profil et les cours de l'enseignant
       const [
@@ -317,7 +301,7 @@ export async function fetchSessionDichotomy(
 
       const classeProfesseurLinks = classes.map(cls => ({
         classe_id: cls.id,
-        professeur_id: teacherId,
+        professeur_id: teacherId as string,
         role_professeur: cls.titulaire_id === teacherId ? 'enseignant_titulaire' : 'enseignant_cours'
       }));
 
@@ -330,17 +314,17 @@ export async function fetchSessionDichotomy(
         },
         classes: classes.length > 0 ? classes : [
           {
-            id: PRIMARY_CLASS_ID,
+            id: null as any,
             nom: '1ère Primaire',
             ecole_id: schoolId,
-            titulaire_id: PROF_SHASA_ID,
+            titulaire_id: null as any,
           },
         ],
         eleves: eleves || [],
         classe_professeur: classeProfesseurLinks.length > 0 ? classeProfesseurLinks : [
           {
-            classe_id: PRIMARY_CLASS_ID,
-            professeur_id: teacherId,
+            classe_id: null as any,
+            professeur_id: teacherId as string,
             role_professeur: 'enseignant_titulaire',
           },
         ],
@@ -380,7 +364,7 @@ export async function fetchSessionDichotomy(
           {
             id: 'b3151f28-2824-401c-8456-12fa0dd7aa48',
             parent_id: parentId,
-            classe_id: PRIMARY_CLASS_ID,
+            classe_id: null as any,
             pseudonyme: 'Joe',
             matricule: 'ADS-2025-0042',
             code_acces: '0123456789',
@@ -405,10 +389,10 @@ export async function fetchSessionDichotomy(
         profile: studentSession,
         classes: [
           {
-            id: PRIMARY_CLASS_ID,
+            id: null as any,
             nom: '1ère Primaire',
             ecole_id: schoolId,
-            titulaire_id: PROF_SHASA_ID,
+            titulaire_id: null as any,
           },
         ],
         eleves: [
@@ -426,8 +410,8 @@ export async function fetchSessionDichotomy(
         quiz_attempts: [],
         classe_professeur: [
           {
-            classe_id: PRIMARY_CLASS_ID,
-            professeur_id: PROF_SHASA_ID,
+            classe_id: null as any,
+            professeur_id: null as any,
             role_professeur: 'enseignant_titulaire',
           },
         ],
