@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/client';
 import { CoursClasse, Cours, Classe, Profile } from '@/types/database.types';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
+
+
 export interface LearningDomain {
   id: string;
   nom: string;
@@ -92,11 +94,7 @@ export function getInitialAssignments(): CoursClasse[] {
 }
 
 export function saveAssignmentsLocally(assignments: CoursClasse[]) {
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(assignments));
-    } catch {}
-  }
+  // No-op
 }
 
 /**
@@ -117,12 +115,12 @@ export function useCourseAssignments(classeId?: string) {
         }
 
         const { data, error } = await query;
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           assignments = data as CoursClasse[];
           saveAssignmentsLocally(assignments);
         }
       } catch (e) {
-        // Ignorer l'erreur
+        // Fallback localement
       }
 
       if (classeId) {
@@ -146,7 +144,7 @@ export function useAssignCourseToClass() {
     mutationFn: async ({
       cours_id,
       classe_id,
-      enseignant_id = '',
+      enseignant_id,
       annee_scolaire = '2025-2026',
     }: {
       cours_id: string;
@@ -245,7 +243,7 @@ export function useBulkAssignCourses() {
     mutationFn: async ({
       cours_ids,
       classe_id,
-      enseignant_id = '',
+      enseignant_id,
       annee_scolaire = '2025-2026',
     }: {
       cours_ids: string[];
@@ -365,10 +363,11 @@ export function useAllClasses() {
           .from('classes')
           .select('*, niveaux(*), profiles(*)');
 
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           const mapped = data.map((c: any) => ({
             ...c,
             nom: c.name || c.nom || 'Classe',
+            titulaire_id: c.titulaire_id || null,
           })) as Classe[];
 
           const merged = [...mapped];
@@ -381,7 +380,7 @@ export function useAllClasses() {
         }
       } catch {}
 
-      return customClasses;
+      return customClasses as Classe[];
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -398,7 +397,7 @@ export function useCreateAdminClass() {
     mutationFn: async ({
       nom,
       niveau_id = '53b37e2f-110b-4551-ac31-e018305f74d5',
-      titulaire_id = '',
+      titulaire_id,
       ecole_id = DEFAULT_SCHOOL_ID,
     }: {
       nom: string;

@@ -46,7 +46,7 @@ export default function DashboardOverviewPage() {
   const { data: quizzes } = useQuizzes();
   const { data: courses } = useCourses();
 
-  // Teacher specific data (Teacher specific data)
+  // Teacher specific data (Simulation Professeur Shasa: auth.user b6416211-0e05-4432-85e9-c5b3b243e543)
   const { data: teacherMe } = useTeacherMe();
   const { data: teacherChaptersData } = useTeacherChapters(teacherMe?.profileId || null);
   const { data: teacherAssignmentsData } = useTeacherAssignments(teacherMe?.profileId || null);

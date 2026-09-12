@@ -35,12 +35,13 @@ export const ROLE_DEFINITIONS: Record<string, RoleInfo> = {
   },
   teacher: {
     role: 'teacher',
-    label: 'Professeur',
+    label: 'Professeur (Shasa)',
     description: 'Crée cours, chapitres/leçons, quiz (10 Qs) et chat avec les élèves',
     icon: '👨‍🏫',
     colorClass: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-    userName: 'Enseignant',
+    userName: 'Prof. Shasa Kanyinda',
     userEmail: 'mec@defmaks.com',
+    authUserId: 'b6416211-0e05-4432-85e9-c5b3b243e543',
   },
   parent: {
     role: 'parent',
