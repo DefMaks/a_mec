@@ -10,7 +10,7 @@ import {
   useDeleteChapter,
   TeacherChapter,
 } from '@/hooks/use-teacher-data';
-import { useCreateCourse } from '@/hooks/use-courses';
+
 import {
   BookOpen,
   FileText,
@@ -46,7 +46,7 @@ export default function TeacherCoursesPage() {
   const createChapterMutation = useCreateChapter();
   const updateChapterMutation = useUpdateChapter();
   const deleteChapterMutation = useDeleteChapter();
-  const createCourseMutation = useCreateCourse();
+
 
   // State
   const [activeTab, setActiveTab] = useState<'chapters' | 'courses'>('chapters');
@@ -56,7 +56,7 @@ export default function TeacherCoursesPage() {
 
   // Modals
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
-  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+
   const [previewChapter, setPreviewChapter] = useState<TeacherChapter | null>(null);
   const [editingChapter, setEditingChapter] = useState<TeacherChapter | null>(null);
 
@@ -190,38 +190,6 @@ export default function TeacherCoursesPage() {
     }
   };
 
-  // Handle Create Course
-  const handleSaveCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCourseFormError(null);
-
-    if (!courseTitre.trim()) {
-      setCourseFormError('Veuillez renseigner le titre du cours.');
-      return;
-    }
-
-    const selectedMatiere = assignments?.matieres.find((m) => m.id === courseMatiereId);
-    const selectedClass = assignments?.classes.find((c) => c.id === courseClasseId);
-
-    try {
-      await createCourseMutation.mutateAsync({
-        titre: courseTitre,
-        classe: selectedClass?.nom || courseClasseNom || '6ème Primaire',
-        matiere_id: courseMatiereId || undefined,
-        matiere_nom: selectedMatiere?.nom || 'Discipline Générale',
-        matiere: selectedMatiere?.nom || 'Discipline Générale',
-        description: courseDescription,
-        ecole_id: me?.ecole?.id || undefined,
-      });
-
-      setCourseTitre('');
-      setCourseDescription('');
-      setIsCourseModalOpen(false);
-      refetchChapters();
-    } catch (err: any) {
-      setCourseFormError(err?.message || 'Erreur lors de la création du cours.');
-    }
-  };
 
   return (
     <RoleGuard allowedRoles={['teacher', 'super_admin', 'admin']} moduleName="l'Espace Cours & Chapitres Enseignant">
@@ -267,18 +235,7 @@ export default function TeacherCoursesPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => {
-              setCourseClasseId(assignments?.classes[0]?.id || '');
-              setCourseMatiereId(assignments?.matieres[0]?.id || '');
-              setCourseFormError(null);
-              setIsCourseModalOpen(true);
-            }}
-            className="px-4 py-2.5 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F2C59] font-bold text-xs rounded-xl border border-[#CBD5E1] transition flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4 text-[#0F2C59]" />
-            <span>Nouveau Cours</span>
-          </button>
+
           <button
             onClick={() => handleOpenCreateChapter()}
             className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2"
@@ -502,17 +459,7 @@ export default function TeacherCoursesPage() {
               <p className="text-xs text-[#64748B] max-w-md mx-auto">
                 Créez un cours pédagogique pour y rattacher des leçons et des chapitres de révision.
               </p>
-              <button
-                onClick={() => {
-                  setCourseClasseId(assignments?.classes[0]?.id || '');
-                  setCourseMatiereId(assignments?.matieres[0]?.id || '');
-                  setCourseFormError(null);
-                  setIsCourseModalOpen(true);
-                }}
-                className="mt-2 px-4 py-2 bg-[#0F2C59] text-white text-xs font-bold rounded-xl shadow-xs"
-              >
-                + Créer un nouveau cours
-              </button>
+
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -722,118 +669,7 @@ export default function TeacherCoursesPage() {
         </div>
       )}
 
-      {/* 6) Modal: Create Course */}
-      {isCourseModalOpen && (
-        <div className="fixed inset-0 bg-[#0F2C59]/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#0F2C59] text-[#D4AF37] flex items-center justify-center font-bold">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-[#0F2C59]">Nouveau Cours Pédagogique</h2>
-                  <p className="text-[11px] text-[#64748B]">Création d'un module d'enseignement</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsCourseModalOpen(false)}
-                className="text-[#94A3B8] hover:text-[#0F2C59] text-sm p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {courseFormError && (
-              <div className="p-3 bg-[#FEE2E2] border border-[#FECACA] rounded-xl text-[#B91C1C] text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{courseFormError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveCourse} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                  Titre Officiel du Cours *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Mathématiques & Analyse Numérique"
-                  value={courseTitre}
-                  onChange={(e) => setCourseTitre(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2.5 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                    Classe Cible
-                  </label>
-                  <select
-                    value={courseClasseId}
-                    onChange={(e) => setCourseClasseId(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
-                  >
-                    {assignments?.classes.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.nom}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                    Discipline / Matière
-                  </label>
-                  <select
-                    value={courseMatiereId}
-                    onChange={(e) => setCourseMatiereId(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
-                  >
-                    {assignments?.matieres.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nom}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#0F2C59] mb-1">
-                  Description & Objectifs Pédagogiques
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Objectifs d'apprentissage, programme officiel et révisions d'examens d'État..."
-                  value={courseDescription}
-                  onChange={(e) => setCourseDescription(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-[#F1F5F9]">
-                <button
-                  type="button"
-                  onClick={() => setIsCourseModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-[#64748B] hover:text-[#0F2C59]"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={createCourseMutation.isPending}
-                  className="px-5 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold text-xs rounded-xl shadow-xs transition"
-                >
-                  {createCourseMutation.isPending ? 'Création...' : 'Créer le Cours'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* 7) Drawer/Modal Preview Chapter */}
       {previewChapter && (

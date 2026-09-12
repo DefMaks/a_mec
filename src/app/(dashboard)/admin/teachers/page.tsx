@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useTeachers, useCreateTeacher } from '@/hooks/use-teachers';
+import { useTeachers, useCreateTeacher, useUpdateProfile } from '@/hooks/use-teachers';
 import { useSchools } from '@/hooks/use-schools';
 import { RoleGuard } from '@/components/layout/role-guard';
 import {
@@ -27,6 +27,8 @@ export default function AdminTeachersPage() {
   const { data: teachers, isLoading } = useTeachers({ search });
   const { data: schools } = useSchools();
   const createTeacherMutation = useCreateTeacher();
+  const updateTeacherMutation = useUpdateProfile();
+  const [editingTeacher, setEditingTeacher] = useState<any>(null);
 
   // Form states
   const [nomComplet, setNomComplet] = useState('');
@@ -390,11 +392,11 @@ export default function AdminTeachersPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={createTeacherMutation.isPending}
+                  disabled={createTeacherMutation.isPending || updateTeacherMutation.isPending}
                   className="px-4 py-2 text-xs font-bold bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-xl shadow-xs flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span>{createTeacherMutation.isPending ? 'Création du compte...' : 'Créer le Compte'}</span>
+                  <span>{createTeacherMutation.isPending || updateTeacherMutation.isPending ? 'En cours...' : editingTeacher ? 'Sauvegarder' : 'Créer le Compte'}</span>
                 </button>
               </div>
             </form>

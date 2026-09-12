@@ -220,3 +220,32 @@ export function useCreateTeacher() {
     },
   });
 }
+
+/**
+ * Hook pour modifier un enseignant (ou tout profil globalement)
+ */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Profile>) => {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', id);
+
+        if (error) throw error;
+      } catch (err) {
+        console.error('Update profile error', err);
+        throw err;
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    },
+  });
+}

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParents } from '@/hooks/use-parents';
+import { useUpdateProfile } from '@/hooks/use-teachers';
 import { RoleGuard } from '@/components/layout/role-guard';
 import {
   HeartHandshake,
@@ -21,6 +22,13 @@ export default function AdminParentsPage() {
   const { data: parents, isLoading } = useParents();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const updateProfileMutation = useUpdateProfile();
+
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIF' ? 'INACTIF' : 'ACTIF';
+    await updateProfileMutation.mutateAsync({ id, active: newStatus === 'ACTIF' });
+  };
+
 
   const filteredParents = (parents || []).filter((p) => {
     const matchesSearch =

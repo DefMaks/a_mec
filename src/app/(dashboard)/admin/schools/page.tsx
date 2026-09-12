@@ -6,6 +6,7 @@ import {
   useAllClasses,
   useCreateAdminClass,
   useCourseAssignments,
+  useUpdateClassTitulaire,
   useAssignCourseToClass,
   useUnassignCourseFromClass,
   useBulkAssignCourses,
@@ -14,6 +15,7 @@ import {
   LearningDomain,
 } from '@/hooks/use-course-assignments';
 import { useCourses, useCreateCourse } from '@/hooks/use-courses';
+import { useMatieres } from '@/hooks/use-matieres';
 import { useTeachers } from '@/hooks/use-teachers';
 import { RoleGuard } from '@/components/layout/role-guard';
 import {
@@ -45,10 +47,12 @@ export default function AdminSchoolsPage() {
 
   const { data: classes, isLoading: loadingClasses } = useAllClasses();
   const createClassMutation = useCreateAdminClass();
+  const updateClassTitulaireMutation = useUpdateClassTitulaire();
 
   const { data: teachers } = useTeachers();
   const { data: courses } = useCourses();
   const createCourseMutation = useCreateCourse();
+  const { data: matieres } = useMatieres();
 
   const [activeTab, setActiveTab] = useState<'classes' | 'assignments' | 'schools'>('assignments');
   const [selectedClasseId, setSelectedClasseId] = useState<string>('');
@@ -73,7 +77,7 @@ export default function AdminSchoolsPage() {
   const [classTitulaireId, setClassTitulaireId] = useState('');
 
   const [courseTitre, setCourseTitre] = useState('');
-  const [courseMatiereNom, setCourseMatiereNom] = useState('Mathématiques');
+  const [courseMatiereId, setCourseMatiereId] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
   const [courseTargetClasses, setCourseTargetClasses] = useState<string[]>([]);
 
@@ -96,6 +100,11 @@ export default function AdminSchoolsPage() {
     setSchoolRccm('');
     setSchoolIdNat('');
     setIsSchoolModalOpen(false);
+  };
+
+  const handleUpdateClassTitulaire = async (classeId: string, titulaireId: string) => {
+    if (!titulaireId) return;
+    await updateClassTitulaireMutation.mutateAsync({ classe_id: classeId, titulaire_id: titulaireId });
   };
 
   const handleCreateClass = async (e: React.FormEvent) => {
@@ -122,11 +131,10 @@ export default function AdminSchoolsPage() {
     await createCourseMutation.mutateAsync({
       titre: courseTitre,
       description: courseDescription,
-      matiere: courseMatiereNom,
-      matiere_nom: courseMatiereNom,
+      matiere_id: courseMatiereId,
+      enseignant_id: selectedClasse?.titulaire_id || undefined,
       target_classe_ids: courseTargetClasses,
-      enseignant_id: undefined,
-    });
+          });
 
     setCourseTitre('');
     setCourseDescription('');
@@ -145,8 +153,7 @@ export default function AdminSchoolsPage() {
       await assignMutation.mutateAsync({
         cours_id: courseId,
         classe_id: selectedClasseId,
-        enseignant_id: undefined,
-      });
+              });
     }
   };
 
@@ -766,13 +773,17 @@ export default function AdminSchoolsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-[#0F2C59] mb-1">Discipline / Matière</label>
-                <input
-                  type="text"
-                  value={courseMatiereNom}
-                  onChange={(e) => setCourseMatiereNom(e.target.value)}
-                  placeholder="ex: Sciences de la Vie et de la Terre"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#008080] text-[#1E293B]"
-                />
+                <select
+                    value={courseMatiereId}
+                    onChange={(e) => setCourseMatiereId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#008080] text-[#1E293B]"
+                    required
+                  >
+                    <option value="">-- Sélectionner une matière --</option>
+                    {(matieres || []).map((m) => (
+                      <option key={m.id} value={m.id}>{m.nom}</option>
+                    ))}
+                  </select>
               </div>
 
               <div>

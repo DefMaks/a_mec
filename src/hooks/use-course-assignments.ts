@@ -441,3 +441,35 @@ export function useCreateAdminClass() {
     },
   });
 }
+
+/**
+ * Hook pour réassigner le titulaire d'une classe
+ */
+export function useUpdateClassTitulaire() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async ({
+      classe_id,
+      titulaire_id,
+    }: {
+      classe_id: string;
+      titulaire_id: string;
+    }) => {
+      try {
+        await supabase
+          .from('classes')
+          .update({ titulaire_id })
+          .eq('id', classe_id);
+      } catch (e) {
+        console.error(e);
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes_list'] });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+    },
+  });
+}
