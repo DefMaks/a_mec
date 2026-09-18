@@ -87,11 +87,13 @@ export default function NewQuizPage() {
   // Cours filtrés selon la classe affectée choisie
   const filteredCours = useMemo(() => {
     if (!chaptersData?.cours) return [];
-    if (!selectedClasseId) return chaptersData.cours;
+    if (!selectedClasseId) return [];
+
+    // Strict scoping: On ne liste que les cours explicitement liés à la classe sélectionnée
     const matched = chaptersData.cours.filter(
-      (c) => !c.classe_id || c.classe_id === selectedClasseId
+      (c) => c.classe_id === selectedClasseId
     );
-    return matched.length > 0 ? matched : chaptersData.cours;
+    return matched;
   }, [chaptersData?.cours, selectedClasseId]);
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export default function NewQuizPage() {
 
   // Filtered chapters for the selected course
   const availableChapters = (chaptersData?.chapitres || []).filter(
-    (ch) => !selectedCoursId || ch.cours_id === selectedCoursId
+    (ch) => selectedCoursId && ch.cours_id === selectedCoursId
   );
 
   const handleUpdateQuestion = (field: keyof QuizQuestion, value: any) => {
