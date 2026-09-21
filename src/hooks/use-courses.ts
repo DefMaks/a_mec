@@ -59,6 +59,18 @@ export function saveStoredCourses(courses: CourseItem[]) {
   }
 }
 
+export function resetAllCoursesAndContent() {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(LOCAL_COURSES_KEY);
+      localStorage.removeItem(LOCAL_CHAPTERS_KEY);
+      localStorage.removeItem('ads_custom_quizzes_v1');
+      localStorage.removeItem('e_rdc_cours_classes_assignments');
+      localStorage.setItem('e_rdc_reset_applied_v2', 'true');
+    } catch {}
+  }
+}
+
 export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
   const supabase = getSupabaseBrowserClient();
 
@@ -80,19 +92,26 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
           console.warn('Erreur chargement cours Supabase:', err?.message);
         }
 
-        // Récupérer les cours stockés localement ou la base de simulation
+        // Vérifier la réinitialisation automatique v2
+        if (typeof window !== 'undefined' && !localStorage.getItem('e_rdc_reset_applied_v2')) {
+          try {
+            localStorage.removeItem(LOCAL_COURSES_KEY);
+            localStorage.removeItem(LOCAL_CHAPTERS_KEY);
+            localStorage.removeItem('e_rdc_custom_courses_v1');
+            localStorage.removeItem('e_rdc_custom_chapters_v1');
+            localStorage.removeItem('ads_custom_quizzes_v1');
+            localStorage.removeItem('e_rdc_cours_classes_assignments');
+            localStorage.setItem('e_rdc_reset_applied_v2', 'true');
+          } catch {}
+        }
+
+        // Récupérer les cours stockés localement (remis à zéro par défaut)
         const localCourses = getStoredCourses();
-        const baseSimulated = localCourses.length > 0 ? localCourses : MESURE_PRIMARY_COURSES;
+        if (localCourses.length === 0) {
+          return [];
+        }
 
-        // Fusion sans doublon par ID
-        const coursesMap = new Map<string, any>();
-        baseSimulated.forEach((c) => coursesMap.set(c.id, c));
-        coursData.forEach((c) => {
-          const existing = coursesMap.get(c.id);
-          coursesMap.set(c.id, { ...existing, ...c });
-        });
-
-        const mergedCourses = Array.from(coursesMap.values());
+        const mergedCourses = [...localCourses];
 
         if (mergedCourses.length === 0) {
           return [];

@@ -865,3 +865,42 @@ export function executeMesureCourseSimulation() {
     return { success: false, error: err?.message };
   }
 }
+
+/**
+ * Réinitialisation complète : Remet à zéro les professeurs (sauf Prof. Shasa Kanyinda),
+ * les cours, les leçons (chapitres) et les quiz.
+ */
+export function resetAllEducationalData() {
+  if (typeof window === 'undefined') return { success: false };
+
+  try {
+    // 1. Réinitialisation des professeurs personnalisés
+    localStorage.removeItem('e_rdc_custom_teachers');
+    localStorage.removeItem('e_rdc_teacher_classes_map');
+    localStorage.removeItem('e_rdc_class_titulaire_map');
+
+    // 2. Remise à zéro des cours
+    localStorage.removeItem('e_rdc_custom_courses_v1');
+    localStorage.removeItem('e_rdc_custom_courses_v2');
+
+    // 3. Remise à zéro des chapitres / leçons
+    localStorage.removeItem('e_rdc_custom_chapters_v1');
+    localStorage.removeItem('e_rdc_custom_chapters_v2');
+
+    // 4. Remise à zéro des quiz
+    localStorage.removeItem('ads_custom_quizzes_v1');
+    localStorage.removeItem('ads_custom_quizzes_v2');
+
+    // 5. Remise à zéro des assignations cours-classes
+    localStorage.removeItem('e_rdc_cours_classes_assignments');
+
+    // Enregistrement du drapeau de réinitialisation
+    localStorage.setItem('e_rdc_reset_applied_v2', 'true');
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Erreur lors du resetAllEducationalData:', err?.message);
+    return { success: false, error: err?.message };
+  }
+}
+

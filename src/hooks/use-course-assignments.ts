@@ -112,37 +112,8 @@ export function getInitialAssignments(): CoursClasse[] {
     } catch {}
   }
 
-  // Base standard national course IDs assigned to primary class with Prof. Shasa Kanyinda
-  const defaultCourses = [
-    '98656796-d9d1-4de6-83d7-7302f4ad8d21',
-    'ce832303-22f4-4bfe-93d3-d8b27becc142',
-    'cfc2ee53-321e-4855-b528-53c460dfe25a',
-    '2d121977-a258-4fe9-97f5-34ab0bbd2a07',
-    '8e1257b9-174f-418e-990a-609dadbefcd2',
-    'd795462b-18ed-4ac4-b1d5-126796273389',
-    '5681f0fa-bc21-495c-a219-b09162372829',
-    '0430841f-f4cc-4e3d-977f-91b6adf37139',
-    '181e884f-b0af-4861-a8df-eb793e2435cb',
-    '163fa90d-d812-4760-a268-64eeaf80e5be',
-    '28ff3596-4a96-4b8c-8aae-4b01008e3a8f',
-    'fa0eedb7-9f9e-43a4-901a-771c0c7fea54',
-    '65bad74c-0c39-4a8e-9df1-1aa121da5849',
-    '45ec3ccc-dca8-4a41-9536-8dc31dd80d26',
-    '9741388b-1d36-4232-b87b-e38c3eae88db',
-    'a2b8c267-4467-4bb8-8637-7bdfbbae68b7',
-    '9190d42b-33c7-44d5-b989-f856504536ad',
-    'e58247ed-6ff8-403e-8bbc-f3f168003219',
-  ];
-
-  return defaultCourses.map((cId) => ({
-    id: `assign-${cId}-730145b3-b30f-4aff-b0ab-c7550849d5fe`,
-    cours_id: cId,
-    classe_id: '730145b3-b30f-4aff-b0ab-c7550849d5fe',
-    enseignant_id: 'b6416211-0e05-4432-85e9-c5b3b243e543',
-    est_actif: true,
-    annee_scolaire: '2025-2026',
-    created_at: new Date().toISOString(),
-  }));
+  // Catalogue remis à zéro : aucune assignation initiale par défaut
+  return [];
 }
 
 export function saveAssignmentsLocally(assignments: CoursClasse[]) {

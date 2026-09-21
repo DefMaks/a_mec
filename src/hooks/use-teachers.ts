@@ -11,6 +11,8 @@ import {
   saveStoredClassTitulaireMap,
   LOCAL_TEACHERS_KEY,
   LOCAL_CLASSES_KEY,
+  LOCAL_TEACHER_CLASSES_KEY,
+  LOCAL_CLASS_TITULAIRE_MAP,
   AssignedClassInfo,
 } from '@/lib/constants/school-structure';
 
@@ -26,16 +28,35 @@ export interface TeacherItem extends Profile {
 
 const DEFAULT_TEACHERS: TeacherItem[] = BASE_TEACHERS as unknown as TeacherItem[];
 
+const REMOVED_DEFAULT_TEACHER_IDS = [
+  'e534604c-1863-450c-96d9-f42c32179b2c', // Jean-Marc Ilunga
+  'f645715d-2974-561d-a7e0-f53d4328ac54', // Marie-Claire Tshisekedi
+  'c2d3e4f5-teacher-mwamba-uuid',         // Christian Mwamba
+  'd4e5f6a7-admin-direction-uuid',        // direction@academiedusalut.cd (Béatrice Kalonji mock)
+  'a1b2c3d4-super-admin-defmaks-uuid',    // Super Administrateur ADS mock
+];
+
 export function getStoredTeachers(): any[] {
   if (typeof window !== 'undefined') {
     try {
       const stored = localStorage.getItem(LOCAL_TEACHERS_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        return parsed.filter((t: any) => !REMOVED_DEFAULT_TEACHER_IDS.includes(t.id));
       }
     } catch {}
   }
   return [];
+}
+
+export function resetTeachersToDefault() {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(LOCAL_TEACHERS_KEY);
+      localStorage.removeItem(LOCAL_TEACHER_CLASSES_KEY);
+      localStorage.removeItem(LOCAL_CLASS_TITULAIRE_MAP);
+    } catch {}
+  }
 }
 
 export function saveStoredTeachers(list: any[]) {

@@ -246,13 +246,12 @@ export async function loadTeacherChapters(profileId: string | null) {
     } catch {}
 
     const localCourses = getStoredCourses();
-    const baseSimulated = localCourses.length > 0 ? localCourses : MESURE_PRIMARY_COURSES;
+    if (localCourses.length === 0) {
+      return { cours: [], chapitres: [] };
+    }
+
     const coursesMap = new Map<string, any>();
-    baseSimulated.forEach((c) => coursesMap.set(c.id, c));
-    (coursData ?? []).forEach((c: any) => {
-      const existing = coursesMap.get(c.id);
-      coursesMap.set(c.id, { ...existing, ...c });
-    });
+    localCourses.forEach((c) => coursesMap.set(c.id, c));
 
     const coursList = Array.from(coursesMap.values());
     const coursIds = coursList.map((c) => c.id);
@@ -299,9 +298,9 @@ export async function loadTeacherChapters(profileId: string | null) {
       } catch {}
     }
 
-    // Récupérer les chapitres définis dans la simulation
+    // Récupérer les chapitres définis dans les cours locaux
     const simulatedChapters: any[] = [];
-    baseSimulated.forEach((bc) => {
+    localCourses.forEach((bc) => {
       if (bc.chapitres && Array.isArray(bc.chapitres)) {
         bc.chapitres.forEach((ch: any) => {
           simulatedChapters.push({

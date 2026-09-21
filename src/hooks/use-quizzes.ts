@@ -26,24 +26,50 @@ export interface QuizItem {
   questions?: QuizQuestion[];
 }
 
+export const LOCAL_QUIZZES_KEY = 'ads_custom_quizzes_v1';
+
+export function getStoredQuizzes(): QuizItem[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_QUIZZES_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+  }
+  return [];
+}
+
+export function saveStoredQuizzes(quizzes: QuizItem[]) {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_QUIZZES_KEY, JSON.stringify(quizzes));
+    } catch {}
+  }
+}
+
+export function resetQuizzes() {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(LOCAL_QUIZZES_KEY);
+    } catch {}
+  }
+}
+
 export function useQuizzes() {
   const supabase = getSupabaseBrowserClient();
 
   return useQuery({
     queryKey: ['quizzes'],
     queryFn: async (): Promise<QuizItem[]> => {
+      // 1. Récupérer les quiz locaux
+      const localQuizzes = getStoredQuizzes();
+
       try {
         const { data: quizData, error: quizError } = await supabase
           .from('quiz')
           .select('*');
 
-        if (quizError) {
-          console.error('Erreur chargement quiz:', quizError.message);
-          return [];
-        }
-
-        if (!quizData || quizData.length === 0) {
-          return [];
+        if (quizError || !quizData || quizData.length === 0) {
+          return localQuizzes;
         }
 
         let questionsList: any[] = [];
@@ -58,7 +84,7 @@ export function useQuizzes() {
           // table optionnelle
         }
 
-        return quizData.map((q: any) => {
+        const dbMapped: QuizItem[] = quizData.map((q: any) => {
           const rawQuestions = Array.isArray(q.answers?.questions)
             ? q.answers.questions
             : Array.isArray(q.questions)
@@ -94,9 +120,15 @@ export function useQuizzes() {
             questions: mappedQuestions,
           };
         });
+
+        // Combiner sans doublons par ID
+        const combinedMap = new Map<string, QuizItem>();
+        localQuizzes.forEach((q) => combinedMap.set(q.id, q));
+        dbMapped.forEach((q) => combinedMap.set(q.id, q));
+        return Array.from(combinedMap.values());
       } catch (err: any) {
         console.error('Erreur chargement quizzes:', err?.message);
-        return [];
+        return localQuizzes;
       }
     },
   });
@@ -196,6 +228,23 @@ export function useCreateQuiz() {
       } catch {
         // Quiz questions table optionnelle si stocké en JSON
       }
+
+      // Sauvegarde dans le stockage local pour résilience totale
+      try {
+        const stored = getStoredQuizzes();
+        const newQuizItem: QuizItem = {
+          id: quizData.id,
+          titre: payload.titre,
+          matiere_nom: payload.matiere_nom || payload.matiere || 'Formation Générale',
+          classe: payload.classe,
+          niveau: payload.niveau,
+          duree_minutes: payload.duree_minutes,
+          total_questions: payload.questions.length,
+          created_at: new Date().toISOString(),
+          questions: payload.questions,
+        };
+        saveStoredQuizzes([newQuizItem, ...stored.filter((q) => q.id !== quizData.id)]);
+      } catch {}
 
       return quizData;
     },

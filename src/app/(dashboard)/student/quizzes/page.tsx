@@ -295,6 +295,17 @@ export default function StudentQuizzesPage() {
               </div>
             </div>
           ))}
+          {(!quizzes || quizzes.length === 0) && (
+            <div className="col-span-full bg-white p-12 text-center text-[#64748B] rounded-2xl border border-[#E2E8F0]">
+              <div className="w-12 h-12 rounded-2xl bg-[#F8FAFC] flex items-center justify-center mx-auto mb-3 text-[#64748B] border border-[#E2E8F0]">
+                <Award className="w-6 h-6" />
+              </div>
+              <p className="font-bold text-[#0F2C59] text-base">Aucun quiz disponible pour le moment</p>
+              <p className="text-xs text-[#64748B] mt-1">
+                Les évaluations et quiz de révision apparaîtront ici dès leur publication par les enseignants.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

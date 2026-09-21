@@ -6,7 +6,7 @@ import { useMatieres } from '@/hooks/use-matieres';
 import { useAllClasses } from '@/hooks/use-course-assignments';
 import { useQueryClient } from '@tanstack/react-query';
 import { RoleGuard } from '@/components/layout/role-guard';
-import { executeMesureCourseSimulation } from '@/lib/simulation/mesure-courses-simulation';
+import { executeMesureCourseSimulation, resetAllEducationalData } from '@/lib/simulation/mesure-courses-simulation';
 import {
   BookOpen,
   Plus,
@@ -15,7 +15,8 @@ import {
   X,
   Sparkles,
   Layers,
-  GraduationCap
+  GraduationCap,
+  RotateCcw
 } from 'lucide-react';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
@@ -44,7 +45,22 @@ export default function AdminCoursesPage() {
       );
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
+      queryClient.invalidateQueries({ queryKey: ['quizzes'] });
       setTimeout(() => setSimulationStatus(null), 8000);
+    }
+  };
+
+  const handleResetData = () => {
+    if (typeof window !== 'undefined' && confirm('Confirmez-vous la remise à zéro des professeurs (sauf Shasa), des cours, des leçons et des quiz ?')) {
+      resetAllEducationalData();
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['quizzes'] });
+      queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher_chapters'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher_assignments'] });
+      setSimulationStatus('Remise à zéro réussie : les cours, chapitres, leçons et quiz ont été réinitialisés à 0.');
+      setTimeout(() => setSimulationStatus(null), 6000);
     }
   };
 
@@ -99,6 +115,15 @@ export default function AdminCoursesPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleResetData}
+              className="flex items-center gap-2 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] px-4 py-2.5 rounded-xl font-bold text-sm shadow-xs transition-all active:scale-[0.98]"
+              title="Remettre à zéro les professeurs (sauf Shasa), cours, leçons et quiz"
+            >
+              <RotateCcw className="w-4 h-4 text-[#DC2626]" />
+              <span>Remettre à zéro</span>
+            </button>
             <button
               type="button"
               onClick={handleRunSimulation}
@@ -212,8 +237,33 @@ export default function AdminCoursesPage() {
 
                 {(!filteredCourses || filteredCourses.length === 0) && (
                   <tr>
-                    <td colSpan={4} className="p-12 text-center text-[#64748B]">
-                      Aucun cours trouvé.
+                    <td colSpan={4} className="p-12 text-center">
+                      <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-[#F1F5F9] flex items-center justify-center text-[#64748B] border border-[#CBD5E1]">
+                          <BookOpen className="w-6 h-6" />
+                        </div>
+                        <p className="text-[#0F2C59] font-bold text-base">Catalogue des cours remis à zéro</p>
+                        <p className="text-sm text-[#64748B]">
+                          Tous les cours et chapitres ont été réinitialisés (0 cours actif). Vous pouvez créer un cours ou lancer la simulation pédagogique standard.
+                        </p>
+                        <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleRunSimulation}
+                            className="inline-flex items-center gap-2 bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#B45309] border border-[#D4AF37]/50 px-4 py-2 rounded-xl font-bold text-xs shadow-xs"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                            <span>Charger la simulation "Mesure"</span>
+                          </button>
+                          <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="inline-flex items-center gap-2 bg-[#0F2C59] text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-[#0F2C59]/90"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Créer un cours</span>
+                          </button>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )}

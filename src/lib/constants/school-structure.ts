@@ -46,7 +46,7 @@ export const STANDARD_PROMOTIONS: Classe[] = [
     nom: '2ème Primaire',
     ecole_id: DEFAULT_SCHOOL_ID,
     niveau_id: '53b37e2f-110b-4551-ac31-e018305f74d5',
-    titulaire_id: 'e534604c-1863-450c-96d9-f42c32179b2c', // Prof. Jean-Marc Ilunga
+    titulaire_id: null,
     created_at: '2026-03-01T00:00:00.000Z',
   },
   {
@@ -54,7 +54,7 @@ export const STANDARD_PROMOTIONS: Classe[] = [
     nom: '3ème Primaire',
     ecole_id: DEFAULT_SCHOOL_ID,
     niveau_id: '53b37e2f-110b-4551-ac31-e018305f74d5',
-    titulaire_id: 'f645715d-2974-561d-a7e0-f53d4328ac54', // Prof. Marie-Claire Tshisekedi
+    titulaire_id: null,
     created_at: '2026-03-01T00:00:00.000Z',
   },
   {
@@ -62,7 +62,7 @@ export const STANDARD_PROMOTIONS: Classe[] = [
     nom: '4ème Primaire',
     ecole_id: DEFAULT_SCHOOL_ID,
     niveau_id: '53b37e2f-110b-4551-ac31-e018305f74d5',
-    titulaire_id: 'c2d3e4f5-teacher-mwamba-uuid', // Prof. Christian Mwamba
+    titulaire_id: null,
     created_at: '2026-03-01T00:00:00.000Z',
   },
   {
@@ -123,94 +123,6 @@ export const BASE_TEACHERS: TeacherRecord[] = [
       },
     ],
   },
-  {
-    id: 'e534604c-1863-450c-96d9-f42c32179b2c',
-    nom_complet: 'Prof. Jean-Marc Ilunga',
-    email: 'prof.ilunga@academiedusalut.cd',
-    telephone: '+243 82 987 6543',
-    role: 'teacher',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    active: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    assigned_class_ids: ['840256c4-c41a-4b0c-a1ba-d8661950e601'],
-    titulaire_class_ids: ['840256c4-c41a-4b0c-a1ba-d8661950e601'],
-    assigned_classes: [
-      {
-        id: '840256c4-c41a-4b0c-a1ba-d8661950e601',
-        nom: '2ème Primaire',
-        is_titulaire: true,
-      },
-    ],
-  },
-  {
-    id: 'f645715d-2974-561d-a7e0-f53d4328ac54',
-    nom_complet: 'Prof. Marie-Claire Tshisekedi',
-    email: 'marieclaire.tshisekedi@academiedusalut.cd',
-    telephone: '+243 81 555 4321',
-    role: 'teacher',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    active: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    assigned_class_ids: ['951367d5-d52b-4c1d-b2cb-e9772061f712'],
-    titulaire_class_ids: ['951367d5-d52b-4c1d-b2cb-e9772061f712'],
-    assigned_classes: [
-      {
-        id: '951367d5-d52b-4c1d-b2cb-e9772061f712',
-        nom: '3ème Primaire',
-        is_titulaire: true,
-      },
-    ],
-  },
-  {
-    id: 'c2d3e4f5-teacher-mwamba-uuid',
-    nom_complet: 'Prof. Christian Mwamba',
-    email: 'christian.mwamba@academiedusalut.cd',
-    telephone: '+243 82 444 3322',
-    role: 'teacher',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    active: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    assigned_class_ids: ['a62478e6-e63c-4d2e-c3dc-fa883172a823'],
-    titulaire_class_ids: ['a62478e6-e63c-4d2e-c3dc-fa883172a823'],
-    assigned_classes: [
-      {
-        id: 'a62478e6-e63c-4d2e-c3dc-fa883172a823',
-        nom: '4ème Primaire',
-        is_titulaire: true,
-      },
-    ],
-  },
-  {
-    id: 'd4e5f6a7-admin-direction-uuid',
-    nom_complet: 'Mme. Béatrice Kalonji',
-    email: 'direction@academiedusalut.cd',
-    telephone: '+243 81 999 8877',
-    role: 'admin',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    active: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    assigned_class_ids: [],
-    titulaire_class_ids: [],
-    assigned_classes: [],
-  },
-  {
-    id: 'a1b2c3d4-super-admin-defmaks-uuid',
-    nom_complet: 'Super Administrateur ADS',
-    email: 'admin@defmaks.com',
-    telephone: '+243 89 000 1122',
-    role: 'super_admin',
-    ecole_id: DEFAULT_SCHOOL_ID,
-    actif: true,
-    active: true,
-    created_at: '2026-03-01T00:00:00.000Z',
-    assigned_class_ids: [],
-    titulaire_class_ids: [],
-    assigned_classes: [],
-  },
 ];
 
 /**
@@ -225,23 +137,11 @@ export function getStoredTeacherClassesMap(): Record<string, { classIds: string[
       }
     } catch {}
   }
-  // Configuration initiale par défaut
+  // Configuration initiale par défaut : Seul Prof. Shasa Kanyinda est affecté à la 1ère Primaire
   return {
     'b6416211-0e05-4432-85e9-c5b3b243e543': {
       classIds: ['730145b3-b30f-4aff-b0ab-c7550849d5fe'],
       titulaireClassIds: ['730145b3-b30f-4aff-b0ab-c7550849d5fe'],
-    },
-    'e534604c-1863-450c-96d9-f42c32179b2c': {
-      classIds: ['840256c4-c41a-4b0c-a1ba-d8661950e601'],
-      titulaireClassIds: ['840256c4-c41a-4b0c-a1ba-d8661950e601'],
-    },
-    'f645715d-2974-561d-a7e0-f53d4328ac54': {
-      classIds: ['951367d5-d52b-4c1d-b2cb-e9772061f712'],
-      titulaireClassIds: ['951367d5-d52b-4c1d-b2cb-e9772061f712'],
-    },
-    'c2d3e4f5-teacher-mwamba-uuid': {
-      classIds: ['a62478e6-e63c-4d2e-c3dc-fa883172a823'],
-      titulaireClassIds: ['a62478e6-e63c-4d2e-c3dc-fa883172a823'],
     },
   };
 }
@@ -266,9 +166,6 @@ export function getStoredClassTitulaireMap(): Record<string, string | null> {
   }
   return {
     '730145b3-b30f-4aff-b0ab-c7550849d5fe': 'b6416211-0e05-4432-85e9-c5b3b243e543', // 1ère Primaire -> Prof. Shasa Kanyinda
-    '840256c4-c41a-4b0c-a1ba-d8661950e601': 'e534604c-1863-450c-96d9-f42c32179b2c', // 2ème Primaire -> Prof. Jean-Marc Ilunga
-    '951367d5-d52b-4c1d-b2cb-e9772061f712': 'f645715d-2974-561d-a7e0-f53d4328ac54', // 3ème Primaire -> Prof. Marie-Claire Tshisekedi
-    'a62478e6-e63c-4d2e-c3dc-fa883172a823': 'c2d3e4f5-teacher-mwamba-uuid',         // 4ème Primaire -> Prof. Christian Mwamba
   };
 }
 

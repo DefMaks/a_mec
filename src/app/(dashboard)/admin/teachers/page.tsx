@@ -7,6 +7,7 @@ import {
   useUpdateTeacher,
   useToggleTeacherActive,
   useAssignTeacherClasses,
+  resetTeachersToDefault,
   TeacherItem,
 } from '@/hooks/use-teachers';
 import { useSchools } from '@/hooks/use-schools';
@@ -14,6 +15,7 @@ import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 import { useAllClasses } from '@/hooks/use-course-assignments';
 import { RoleGuard } from '@/components/layout/role-guard';
 import { useRole } from '@/context/role-context';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   Plus,
@@ -39,12 +41,15 @@ import {
   UserCheck,
   UserX,
   BookOpen,
+  RotateCcw,
 } from 'lucide-react';
 
 export default function AdminTeachersPage() {
+  const queryClient = useQueryClient();
   const { role: activeUserRole, isSuperAdmin, canManageRole } = useRole();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE' | 'TEACHER' | 'ADMIN'>('ALL');
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
   const { data: teachers, isLoading } = useTeachers({ search }, isSuperAdmin);
   const { data: schools } = useSchools();
@@ -57,6 +62,17 @@ export default function AdminTeachersPage() {
   const updateTeacherMutation = useUpdateTeacher();
   const toggleActiveMutation = useToggleTeacherActive();
   const assignClassesMutation = useAssignTeacherClasses();
+
+  const handleResetTeachers = () => {
+    if (typeof window !== 'undefined' && confirm('Confirmez-vous le nettoyage des données fictives du personnel ? Seul Prof. Shasa Kanyinda et les profils réels de la base seront conservés.')) {
+      resetTeachersToDefault();
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['all_classes'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-assignments'] });
+      setFeedbackMsg('Nettoyage effectué : les données fictives ont été purgées.');
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    }
+  };
 
   // --- Modals State ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -269,14 +285,33 @@ export default function AdminTeachersPage() {
               CRU, activation/désactivation des comptes, affectation aux classes et titulariat pédagogique.
             </p>
           </div>
-          <button
-            onClick={handleOpenCreateModal}
-            className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs"
-          >
-            <Plus className="w-4 h-4 text-[#D4AF37]" />
-            <span>Nouveau Compte Personnel</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleResetTeachers}
+              className="flex items-center gap-2 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] px-4 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
+              title="Nettoyer les données fictives du personnel"
+            >
+              <RotateCcw className="w-4 h-4 text-[#DC2626]" />
+              <span>Nettoyer données de test</span>
+            </button>
+            <button
+              onClick={handleOpenCreateModal}
+              className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs"
+            >
+              <Plus className="w-4 h-4 text-[#D4AF37]" />
+              <span>Nouveau Compte Personnel</span>
+            </button>
+          </div>
         </div>
+
+        {/* Feedback Message */}
+        {feedbackMsg && (
+          <div className="p-4 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-sm text-[#166534] font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-[#166534]" />
+            <span>{feedbackMsg}</span>
+          </div>
+        )}
 
         {/* Success Notification Banner with generated credentials */}
         {createdSuccessInfo && (
