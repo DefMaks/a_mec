@@ -76,20 +76,29 @@ export default function AdminTeachersPage() {
 
   // --- Modals State ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<TeacherItem | null>(null);
   const [assigningTeacher, setAssigningTeacher] = useState<TeacherItem | null>(null);
   const [deactivatingTeacher, setDeactivatingTeacher] = useState<TeacherItem | null>(null);
 
-  // --- Create Form State ---
+  // --- Create Teacher Form State ---
   const [createNomComplet, setCreateNomComplet] = useState('');
   const [createEmail, setCreateEmail] = useState('');
   const [createTelephone, setCreateTelephone] = useState('');
+  const [createSpecialite, setCreateSpecialite] = useState('');
   const [createEcoleId, setCreateEcoleId] = useState(adminSchoolId);
-  const [createRole, setCreateRole] = useState<'teacher' | 'admin' | 'super_admin'>('teacher');
   const [createCustomPassword, setCreateCustomPassword] = useState('');
   const [createAutoGeneratePassword, setCreateAutoGeneratePassword] = useState(true);
   const [createAssignedClasses, setCreateAssignedClasses] = useState<string[]>([]);
   const [createTitulaireClasses, setCreateTitulaireClasses] = useState<string[]>([]);
+
+  // --- Create Admin Form State ---
+  const [createAdminNomComplet, setCreateAdminNomComplet] = useState('');
+  const [createAdminEmail, setCreateAdminEmail] = useState('');
+  const [createAdminTelephone, setCreateAdminTelephone] = useState('');
+  const [createAdminRole, setCreateAdminRole] = useState<'admin' | 'super_admin'>('admin');
+  const [createAdminCustomPassword, setCreateAdminCustomPassword] = useState('');
+  const [createAdminAutoGeneratePassword, setCreateAdminAutoGeneratePassword] = useState(true);
 
   // --- Edit Form State ---
   const [editNomComplet, setEditNomComplet] = useState('');
@@ -130,14 +139,14 @@ export default function AdminTeachersPage() {
   const teacherCount = teachers?.filter((t) => t.role === 'teacher').length || 0;
   const adminCount = teachers?.filter((t) => t.role === 'admin' || t.role === 'super_admin').length || 0;
 
-  // Handlers
-  const handleOpenCreateModal = () => {
+  // Handlers - Professeur
+  const handleOpenCreateTeacherModal = () => {
     setCreatedSuccessInfo(null);
     setCreateNomComplet('');
     setCreateEmail('');
     setCreateTelephone('');
+    setCreateSpecialite('');
     setCreateEcoleId(adminSchoolId);
-    setCreateRole('teacher');
     setCreateAutoGeneratePassword(true);
     setCreateCustomPassword('');
     setCreateAssignedClasses([]);
@@ -145,12 +154,9 @@ export default function AdminTeachersPage() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleCreateTeacherSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createNomComplet.trim() || !createEmail.trim()) return;
-
-    // Enforce hierarchy: non-super_admin cannot create super_admin
-    const targetRole = isSuperAdmin ? createRole : createRole === 'super_admin' ? 'admin' : createRole;
 
     const generatedPass = createAutoGeneratePassword
       ? `Ads_${Math.random().toString(36).slice(-6)}!2026`
@@ -158,25 +164,81 @@ export default function AdminTeachersPage() {
 
     const targetEcoleId = createEcoleId || adminSchoolId;
 
-    await createTeacherMutation.mutateAsync({
-      nom_complet: createNomComplet,
-      email: createEmail,
-      telephone: createTelephone || undefined,
-      ecole_id: targetEcoleId,
-      role: targetRole,
-      password: generatedPass,
-      assigned_class_ids: createAssignedClasses,
-      titulaire_class_ids: createTitulaireClasses,
-    });
+    try {
+      const createdRecord = await createTeacherMutation.mutateAsync({
+        nom_complet: createNomComplet,
+        email: createEmail,
+        telephone: createTelephone || undefined,
+        specialite: createSpecialite || undefined,
+        ecole_id: targetEcoleId,
+        role: 'teacher',
+        password: generatedPass,
+        assigned_class_ids: createAssignedClasses,
+        titulaire_class_ids: createTitulaireClasses,
+      });
 
-    setCreatedSuccessInfo({
-      nom_complet: createNomComplet,
-      email: createEmail,
-      role: targetRole,
-      password: generatedPass,
-    });
+      setCreatedSuccessInfo({
+        nom_complet: createNomComplet,
+        email: createEmail,
+        role: 'teacher',
+        password: createdRecord?.password || generatedPass,
+      });
 
-    setIsCreateModalOpen(false);
+      setIsCreateModalOpen(false);
+      setFeedbackMsg(`Compte Professeur créé avec succès pour ${createNomComplet}.`);
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    } catch (err: any) {
+      alert(`Erreur lors de la création du professeur : ${err?.message || 'Une erreur est survenue.'}`);
+    }
+  };
+
+  // Handlers - Administrateur & Super Administrateur
+  const handleOpenCreateAdminModal = () => {
+    setCreatedSuccessInfo(null);
+    setCreateAdminNomComplet('');
+    setCreateAdminEmail('');
+    setCreateAdminTelephone('');
+    setCreateAdminRole('admin');
+    setCreateAdminAutoGeneratePassword(true);
+    setCreateAdminCustomPassword('');
+    setIsCreateAdminModalOpen(true);
+  };
+
+  const handleCreateAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createAdminNomComplet.trim() || !createAdminEmail.trim()) return;
+
+    // Enforce hierarchy: only super_admin can create super_admin
+    const targetRole = isSuperAdmin ? createAdminRole : 'admin';
+
+    const generatedPass = createAdminAutoGeneratePassword
+      ? `Ads_${Math.random().toString(36).slice(-6)}!2026`
+      : createAdminCustomPassword || `Ads_${Math.random().toString(36).slice(-6)}!2026`;
+
+    try {
+      const createdRecord = await createTeacherMutation.mutateAsync({
+        nom_complet: createAdminNomComplet,
+        email: createAdminEmail,
+        telephone: createAdminTelephone || undefined,
+        ecole_id: adminSchoolId,
+        role: targetRole,
+        password: generatedPass,
+      });
+
+      setCreatedSuccessInfo({
+        nom_complet: createAdminNomComplet,
+        email: createAdminEmail,
+        role: targetRole,
+        password: createdRecord?.password || generatedPass,
+      });
+
+      setIsCreateAdminModalOpen(false);
+      const roleLabel = targetRole === 'super_admin' ? 'Super Administrateur' : "Administrateur d'Établissement";
+      setFeedbackMsg(`Compte ${roleLabel} créé avec succès pour ${createAdminNomComplet}.`);
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    } catch (err: any) {
+      alert(`Erreur lors de la création de l'administrateur : ${err?.message || 'Une erreur est survenue.'}`);
+    }
   };
 
   const handleOpenEditModal = (teacher: TeacherItem) => {
@@ -289,18 +351,25 @@ export default function AdminTeachersPage() {
             <button
               type="button"
               onClick={handleResetTeachers}
-              className="flex items-center gap-2 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] px-4 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
+              className="flex items-center gap-2 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
               title="Nettoyer les données fictives du personnel"
             >
               <RotateCcw className="w-4 h-4 text-[#DC2626]" />
               <span>Nettoyer données de test</span>
             </button>
             <button
-              onClick={handleOpenCreateModal}
-              className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs"
+              onClick={handleOpenCreateTeacherModal}
+              className="px-4 py-2 bg-[#008080] hover:bg-[#008080]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs"
             >
-              <Plus className="w-4 h-4 text-[#D4AF37]" />
-              <span>Nouveau Compte Personnel</span>
+              <Plus className="w-4 h-4 text-white" />
+              <span>Créer un Professeur</span>
+            </button>
+            <button
+              onClick={handleOpenCreateAdminModal}
+              className="px-4 py-2 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs border border-[#D4AF37]/30"
+            >
+              <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+              <span>{isSuperAdmin ? 'Créer Admin / Super Admin' : 'Créer un Admin'}</span>
             </button>
           </div>
         </div>
@@ -686,18 +755,18 @@ export default function AdminTeachersPage() {
           )}
         </div>
 
-        {/* MODAL 1: CRÉATION D'UN PERSONNEL & ASSIGNATION */}
+        {/* MODAL 1: CRÉATION D'UN PROFESSEUR & AFFECTATION */}
         {isCreateModalOpen && (
           <div className="fixed inset-0 bg-[#0F2C59]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
             <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-[#E2E8F0] max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#0F2C59] text-[#D4AF37] flex items-center justify-center font-bold border border-[#D4AF37]/30 shadow-2xs">
-                    <Users className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-[#008080] text-white flex items-center justify-center font-bold shadow-2xs">
+                    <GraduationCap className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-[#0F2C59]">Nouveau Compte Enseignant / Personnel</h2>
-                    <p className="text-[11px] text-[#64748B]">Création du profil, identifiants et affectations</p>
+                    <h2 className="text-base font-bold text-[#0F2C59]">Nouveau Compte Professeur</h2>
+                    <p className="text-[11px] text-[#64748B]">Création du profil enseignant, identifiants et affectations</p>
                   </div>
                 </div>
                 <button
@@ -708,10 +777,10 @@ export default function AdminTeachersPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <form onSubmit={handleCreateTeacherSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Nom Complet du Personnel *</label>
+                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Nom Complet de l'Enseignant *</label>
                     <input
                       type="text"
                       required
@@ -746,22 +815,14 @@ export default function AdminTeachersPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Rôle Système *</label>
-                    <select
-                      value={createRole}
-                      onChange={(e) => setCreateRole(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#008080] text-[#1E293B] bg-white cursor-pointer"
-                    >
-                      <option value="teacher">Professeur / Enseignant</option>
-                      <option value="admin">Administrateur d'Établissement</option>
-                      {/* Super Admin option only allowed for super_admin */}
-                      {isSuperAdmin && <option value="super_admin">Super Administrateur</option>}
-                    </select>
-                    {!isSuperAdmin && (
-                      <p className="text-[10px] text-[#64748B] mt-1">
-                        * En tant qu'administrateur, vous pouvez créer des administrateurs et des professeurs.
-                      </p>
-                    )}
+                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Spécialité / Discipline (Optionnel)</label>
+                    <input
+                      type="text"
+                      value={createSpecialite}
+                      onChange={(e) => setCreateSpecialite(e.target.value)}
+                      placeholder="ex: Mathématiques, Physique, Français, etc."
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#008080] text-[#1E293B]"
+                    />
                   </div>
 
                   {/* Champ invisible - affecté par défaut à l'école gérée par l'admin */}
@@ -775,69 +836,67 @@ export default function AdminTeachersPage() {
                   </div>
                 </div>
 
-                {/* Section Affectation des Classes */}
-                {createRole === 'teacher' && (
-                  <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#0F2C59] flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-[#008080]" />
-                        Affectation Immédiate aux Classes
-                      </span>
-                      <span className="text-[10px] text-[#64748B]">Optionnel</span>
-                    </div>
+                {/* Section Affectation Immédiate aux Classes */}
+                <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#0F2C59] flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-[#008080]" />
+                      Affectation Immédiate aux Classes
+                    </span>
+                    <span className="text-[10px] text-[#64748B]">Optionnel</span>
+                  </div>
 
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                      {allClasses?.map((cls) => {
-                        const isAssigned = createAssignedClasses.includes(cls.id);
-                        const isTitulaire = createTitulaireClasses.includes(cls.id);
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {allClasses?.map((cls) => {
+                      const isAssigned = createAssignedClasses.includes(cls.id);
+                      const isTitulaire = createTitulaireClasses.includes(cls.id);
 
-                        return (
-                          <div
-                            key={cls.id}
-                            className={`p-2 rounded-lg border text-xs flex items-center justify-between transition ${
-                              isAssigned ? 'bg-[#E6F4F4]/50 border-[#008080]/30' : 'bg-white border-[#E2E8F0]'
-                            }`}
-                          >
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                      return (
+                        <div
+                          key={cls.id}
+                          className={`p-2 rounded-lg border text-xs flex items-center justify-between transition ${
+                            isAssigned ? 'bg-[#E6F4F4]/50 border-[#008080]/30' : 'bg-white border-[#E2E8F0]'
+                          }`}
+                        >
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isAssigned}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setCreateAssignedClasses([...createAssignedClasses, cls.id]);
+                                } else {
+                                  setCreateAssignedClasses(createAssignedClasses.filter((id) => id !== cls.id));
+                                  setCreateTitulaireClasses(createTitulaireClasses.filter((id) => id !== cls.id));
+                                }
+                              }}
+                              className="rounded text-[#008080] focus:ring-[#008080]"
+                            />
+                            <span className="font-semibold text-[#1E293B]">{cls.nom}</span>
+                          </label>
+
+                          {isAssigned && (
+                            <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#008080] cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={isAssigned}
+                                checked={isTitulaire}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setCreateAssignedClasses([...createAssignedClasses, cls.id]);
+                                    setCreateTitulaireClasses([...createTitulaireClasses, cls.id]);
                                   } else {
-                                    setCreateAssignedClasses(createAssignedClasses.filter((id) => id !== cls.id));
                                     setCreateTitulaireClasses(createTitulaireClasses.filter((id) => id !== cls.id));
                                   }
                                 }}
                                 className="rounded text-[#008080] focus:ring-[#008080]"
                               />
-                              <span className="font-semibold text-[#1E293B]">{cls.nom}</span>
+                              <span>Titulaire</span>
                             </label>
-
-                            {isAssigned && (
-                              <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#008080] cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={isTitulaire}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setCreateTitulaireClasses([...createTitulaireClasses, cls.id]);
-                                    } else {
-                                      setCreateTitulaireClasses(createTitulaireClasses.filter((id) => id !== cls.id));
-                                    }
-                                  }}
-                                  className="rounded text-[#008080] focus:ring-[#008080]"
-                                />
-                                <span>Titulaire</span>
-                              </label>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
 
                 {/* Password Option */}
                 <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0] space-y-2">
@@ -875,10 +934,142 @@ export default function AdminTeachersPage() {
                   <button
                     type="submit"
                     disabled={createTeacherMutation.isPending}
+                    className="px-4 py-2 text-xs font-bold bg-[#008080] text-white hover:bg-[#008080]/90 rounded-xl shadow-xs flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>{createTeacherMutation.isPending ? 'Création...' : 'Créer le Professeur'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 1-BIS: CRÉATION D'UN ADMINISTRATEUR OU SUPER_ADMIN */}
+        {isCreateAdminModalOpen && (
+          <div className="fixed inset-0 bg-[#0F2C59]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-[#E2E8F0] max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#0F2C59] text-[#D4AF37] flex items-center justify-center font-bold border border-[#D4AF37]/30 shadow-2xs">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-[#0F2C59]">
+                      {isSuperAdmin ? 'Nouveau Compte Administrateur / Super Admin' : "Nouveau Compte Administrateur d'Établissement"}
+                    </h2>
+                    <p className="text-[11px] text-[#64748B]">Création des privilèges de gestion de la plateforme</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsCreateAdminModalOpen(false)}
+                  className="p-1.5 rounded-lg text-[#64748B] hover:bg-[#F1F5F9]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateAdminSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Nom Complet de l'Administrateur *</label>
+                    <input
+                      type="text"
+                      required
+                      value={createAdminNomComplet}
+                      onChange={(e) => setCreateAdminNomComplet(e.target.value)}
+                      placeholder="ex: Dr. Aimé Mukendi"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#0F2C59] text-[#1E293B]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Email Professionnel *</label>
+                    <input
+                      type="email"
+                      required
+                      value={createAdminEmail}
+                      onChange={(e) => setCreateAdminEmail(e.target.value)}
+                      placeholder="admin.mukendi@academiedusalut.cd"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#0F2C59] text-[#1E293B]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Téléphone (WhatsApp / SMS)</label>
+                    <input
+                      type="tel"
+                      value={createAdminTelephone}
+                      onChange={(e) => setCreateAdminTelephone(e.target.value)}
+                      placeholder="+243 81 234 5678"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#0F2C59] text-[#1E293B]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-[#0F2C59] mb-1">Rôle Administratif *</label>
+                    {isSuperAdmin ? (
+                      <select
+                        value={createAdminRole}
+                        onChange={(e) => setCreateAdminRole(e.target.value as any)}
+                        className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#0F2C59] text-[#1E293B] bg-white cursor-pointer"
+                      >
+                        <option value="admin">Administrateur d'Établissement</option>
+                        <option value="super_admin">Super Administrateur (Accès Total)</option>
+                      </select>
+                    ) : (
+                      <div className="px-3.5 py-2.5 text-xs rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] text-[#0F2C59] font-bold">
+                        Administrateur d'Établissement
+                      </div>
+                    )}
+                    <p className="text-[10px] text-[#64748B] mt-1">
+                      {isSuperAdmin
+                        ? 'En tant que Super Admin, vous pouvez promouvoir un utilisateur au rang Super Admin ou Administrateur.'
+                        : "En tant qu'Administrateur, vous pouvez déléguer la gestion à un nouvel Administrateur d'Établissement."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Password Option */}
+                <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0] space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-bold text-[#0F2C59] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={createAdminAutoGeneratePassword}
+                      onChange={(e) => setCreateAdminAutoGeneratePassword(e.target.checked)}
+                      className="rounded text-[#0F2C59] focus:ring-[#0F2C59]"
+                    />
+                    <span>Générer automatiquement un mot de passe temporaire sécurisé</span>
+                  </label>
+
+                  {!createAdminAutoGeneratePassword && (
+                    <div>
+                      <input
+                        type="password"
+                        value={createAdminCustomPassword}
+                        onChange={(e) => setCreateAdminCustomPassword(e.target.value)}
+                        placeholder="Définir un mot de passe initial..."
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-[#CBD5E1] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F2C59] text-[#1E293B]"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateAdminModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] rounded-xl"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createTeacherMutation.isPending}
                     className="px-4 py-2 text-xs font-bold bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-xl shadow-xs flex items-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-                    <span>{createTeacherMutation.isPending ? 'Création...' : 'Créer le Compte'}</span>
+                    <span>{createTeacherMutation.isPending ? 'Création...' : "Créer l'Administrateur"}</span>
                   </button>
                 </div>
               </form>

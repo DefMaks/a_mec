@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import { useStudents, useCreateStudent } from '@/hooks/use-students';
 import { RoleGuard } from '@/components/layout/role-guard';
+import { useRole } from '@/context/role-context';
 import { GraduationCap, Plus, KeyRound, Sparkles, User, Calendar, ShieldCheck, X } from 'lucide-react';
 
 export default function AdminStudentsPage() {
+  const { role, isTeacher, isSuperAdmin, isAdmin } = useRole();
   const { data: students, isLoading } = useStudents();
   const createStudentMutation = useCreateStudent();
 
@@ -33,21 +35,28 @@ export default function AdminStudentsPage() {
             <span className="text-[10px] font-bold text-[#D4AF37] bg-[#FFFBEB] px-2.5 py-0.5 rounded uppercase tracking-wider border border-[#D4AF37]/30">
               Académie du Salut • Pédagogie
             </span>
+            <span className="text-[10px] font-bold text-[#0F2C59] bg-[#F1F5F9] px-2.5 py-0.5 rounded uppercase tracking-wider border border-[#CBD5E1]">
+              Vue : {isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin Établissement' : 'Professeur'}
+            </span>
           </div>
           <h1 className="text-2xl font-extrabold text-[#0F2C59] mt-1">
             Répertoire des Élèves & Effectifs
           </h1>
           <p className="text-[#64748B] text-xs mt-0.5">
-            Gestion des pseudonymes, codes d'accès uniques et rattachement tuteurs légaux
+            {isTeacher
+              ? 'Consultation de la liste des élèves scolarisés et suivi de leurs accès pédagogiques'
+              : "Gestion des pseudonymes, codes d'accès uniques et rattachement tuteurs légaux"}
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs"
-        >
-          <Plus className="w-4 h-4 text-[#D4AF37]" />
-          <span>Inscrire un Élève</span>
-        </button>
+        {!isTeacher && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs"
+          >
+            <Plus className="w-4 h-4 text-[#D4AF37]" />
+            <span>Inscrire un Élève</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-xs">

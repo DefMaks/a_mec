@@ -243,6 +243,11 @@ export function useTeachers(
       // 5. Filtrage
       let results = enrichedList;
 
+      // Règle de visibilité : Seul le super_admin peut voir les super_admin. L'admin voit les admins et professeurs.
+      if (!isSuperAdmin) {
+        results = results.filter((t) => t.role !== 'super_admin');
+      }
+
       if (filters?.role) {
         results = results.filter((t) => t.role === filters.role);
       }
@@ -275,8 +280,13 @@ export interface CreateTeacherPayload {
   password?: string;
   role?: 'teacher' | 'admin' | 'super_admin';
   ecole_id?: string;
+  specialite?: string;
   assigned_class_ids?: string[];
   titulaire_class_ids?: string[];
+  affectations?: {
+    classe_id: string;
+    role_professeur?: 'titulaire' | 'enseignant' | 'co-enseignant';
+  }[];
 }
 
 export function useCreateTeacher() {
@@ -290,40 +300,69 @@ export function useCreateTeacher() {
       const assignedClassIds = teacherData.assigned_class_ids || [];
       const titulaireClassIds = teacherData.titulaire_class_ids || [];
 
-      // 1. Invoquer l'Edge Function Supabase 'create-user' si disponible
+      // Préparer les affectations structurées recommandées
+      const titulaireSet = new Set(titulaireClassIds);
+      const affectations = teacherData.affectations || assignedClassIds.map((cid) => ({
+        classe_id: cid,
+        role_professeur: (titulaireSet.has(cid) ? 'titulaire' : 'enseignant') as 'titulaire' | 'enseignant',
+      }));
+
+      // 1. Invoquer l'Edge Function Supabase 'create-user'
+      // Endpoint: https://fkuyjdfmpdzpaycfopmd.supabase.co/functions/v1/create-user
       let createdId = `user-${Date.now()}-${Math.random().toString(36).slice(-6)}`;
+      let edgeSuccess = false;
+      let finalPassword = teacherData.password || 'Temp123456!';
+
       try {
         const { data: edgeData, error: edgeError } = await supabase.functions.invoke('create-user', {
           body: {
             email: teacherData.email,
+            phone: teacherData.telephone,
+            telephone: teacherData.telephone,
             password: teacherData.password || 'Temp123456!',
             nom_complet: teacherData.nom_complet,
-            telephone: teacherData.telephone,
             role: targetRole,
             ecole_id: targetSchoolId,
+            specialite: teacherData.specialite || null,
+            profile_status: true,
+            email_confirm: true,
+            phone_confirm: true,
+            affectations,
+            assigned_class_ids: assignedClassIds,
+            titulaire_class_ids: titulaireClassIds,
           },
         });
 
-        if (!edgeError && edgeData?.user?.id) {
-          createdId = edgeData.user.id;
+        if (edgeError) {
+          console.warn('Appel Edge Function create-user:', edgeError.message);
+        } else if (edgeData?.user_id || edgeData?.user?.id) {
+          createdId = edgeData.user_id || edgeData.user.id;
+          if (edgeData.temporary_password) {
+            finalPassword = edgeData.temporary_password;
+          }
+          edgeSuccess = true;
         }
-      } catch {}
+      } catch (err: any) {
+        console.warn('Erreur résiliente Edge Function create-user:', err?.message);
+      }
 
-      // 2. Insérer dans profiles Supabase (colonnes réelles: id, nom_complet, role, ecole_id)
-      try {
-        await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: createdId,
-              nom_complet: teacherData.nom_complet,
-              role: targetRole,
-              ecole_id: targetSchoolId,
-            },
-          ]);
-      } catch {}
+      // 2. Si l'Edge function n'est pas encore déployée ou a échoué, tenter insertion locale de secours
+      if (!edgeSuccess) {
+        try {
+          await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: createdId,
+                nom_complet: teacherData.nom_complet,
+                role: targetRole,
+                ecole_id: targetSchoolId,
+              },
+            ]);
+        } catch {}
+      }
 
-      // 3. Sauvegarder dans le stockage local
+      // 3. Sauvegarder dans le stockage local pour affichage immédiat
       const newTeacher: any = {
         id: createdId,
         nom_complet: teacherData.nom_complet,
@@ -333,6 +372,7 @@ export function useCreateTeacher() {
         ecole_id: targetSchoolId,
         active: true,
         actif: true,
+        password: finalPassword,
         created_at: new Date().toISOString(),
         assigned_class_ids: assignedClassIds,
         titulaire_class_ids: titulaireClassIds,

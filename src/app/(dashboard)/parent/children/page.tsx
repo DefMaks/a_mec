@@ -28,8 +28,9 @@ import {
 } from 'lucide-react';
 
 export default function ParentChildrenPage() {
-  const { roleInfo, isParent, isSuperAdmin } = useRole();
-  const { data: students, isLoading } = useStudents();
+  const { roleInfo, isParent, isSuperAdmin, isAdmin } = useRole();
+  const parentIdFilter = isParent && !isSuperAdmin && !isAdmin ? (roleInfo.authUserId || 'parent-auth-id') : undefined;
+  const { data: students, isLoading } = useStudents(undefined, isSuperAdmin, parentIdFilter);
   const { data: allClasses } = useAllClasses();
   const createStudentMutation = useCreateStudent();
 
