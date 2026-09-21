@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
+import { MESURE_PRIMARY_COURSES } from '@/lib/simulation/mesure-courses-simulation';
+import { getStoredCourses, LOCAL_COURSES_KEY, LOCAL_CHAPTERS_KEY } from '@/hooks/use-courses';
 
 export interface TeacherMeInfo {
   authUserId: string | null;
@@ -231,15 +233,28 @@ export async function loadTeacherChapters(profileId: string | null) {
   const supabase = getSupabaseBrowserClient();
 
   try {
-    // 1) Récupérer les cours du professeur
-    const { data: coursData, error: coursErr } = await supabase
-      .from('cours')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // 1) Récupérer les cours du professeur (Supabase + Simulation/Local)
+    let coursData: any[] = [];
+    try {
+      const { data, error: coursErr } = await supabase
+        .from('cours')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!coursErr && data) {
+        coursData = data;
+      }
+    } catch {}
 
-    if (coursErr) throw coursErr;
+    const localCourses = getStoredCourses();
+    const baseSimulated = localCourses.length > 0 ? localCourses : MESURE_PRIMARY_COURSES;
+    const coursesMap = new Map<string, any>();
+    baseSimulated.forEach((c) => coursesMap.set(c.id, c));
+    (coursData ?? []).forEach((c: any) => {
+      const existing = coursesMap.get(c.id);
+      coursesMap.set(c.id, { ...existing, ...c });
+    });
 
-    const coursList = coursData ?? [];
+    const coursList = Array.from(coursesMap.values());
     const coursIds = coursList.map((c) => c.id);
 
     // Récupérer la liste des matières pour joindre les libellés
@@ -266,14 +281,51 @@ export async function loadTeacherChapters(profileId: string | null) {
     }
 
     // 2) Récupérer les chapitres par cours_id
-    const { data: chapitresData, error: chErr } = await supabase
-      .from('chapitres')
-      .select('*')
-      .in('cours_id', coursIds);
+    let dbChapitres: any[] = [];
+    try {
+      const { data: chapitresData } = await supabase
+        .from('chapitres')
+        .select('*')
+        .in('cours_id', coursIds);
+      if (chapitresData) dbChapitres = chapitresData;
+    } catch {}
 
-    if (chErr) throw chErr;
+    // Récupérer chapitres locaux
+    let localChapitres: any[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(LOCAL_CHAPTERS_KEY);
+        if (raw) localChapitres = JSON.parse(raw);
+      } catch {}
+    }
 
-    const rawChapitres = (chapitresData ?? []).sort((a: any, b: any) => {
+    // Récupérer les chapitres définis dans la simulation
+    const simulatedChapters: any[] = [];
+    baseSimulated.forEach((bc) => {
+      if (bc.chapitres && Array.isArray(bc.chapitres)) {
+        bc.chapitres.forEach((ch: any) => {
+          simulatedChapters.push({
+            id: ch.id,
+            cours_id: bc.id,
+            titre: ch.titre,
+            contenu: ch.contenu,
+            contenu_html: ch.contenu,
+            ordre: ch.ordre || ch.position || 1,
+            position: ch.position || ch.ordre || 1,
+            duree_minutes: ch.duree_minutes || 30,
+            audio_url: ch.audio_url || null,
+            pdf_url: ch.pdf_url || null,
+          });
+        });
+      }
+    });
+
+    const chMap = new Map<string, any>();
+    simulatedChapters.forEach((ch) => chMap.set(ch.id, ch));
+    localChapitres.forEach((ch) => chMap.set(ch.id, ch));
+    dbChapitres.forEach((ch) => chMap.set(ch.id, ch));
+
+    const rawChapitres = Array.from(chMap.values()).sort((a: any, b: any) => {
       const posA = a.position ?? a.ordre ?? 1;
       const posB = b.position ?? b.ordre ?? 1;
       return posA - posB;
@@ -528,14 +580,36 @@ export function useCreateChapter() {
       if (payload.audio_url) chapterPayload.audio_url = payload.audio_url;
       if (payload.pdf_url) chapterPayload.pdf_url = payload.pdf_url;
 
-      const { data, error } = await supabase
-        .from('chapitres')
-        .insert([chapterPayload])
-        .select()
-        .single();
+      let savedChapter: any = null;
+      try {
+        const { data, error } = await supabase
+          .from('chapitres')
+          .insert([chapterPayload])
+          .select()
+          .single();
 
-      if (error) throw new Error(error.message);
-      return data;
+        if (!error && data) {
+          savedChapter = data;
+        }
+      } catch {}
+
+      if (!savedChapter) {
+        savedChapter = {
+          id: `ch-custom-${Date.now()}`,
+          ...chapterPayload,
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem(LOCAL_CHAPTERS_KEY);
+          const list = raw ? JSON.parse(raw) : [];
+          localStorage.setItem(LOCAL_CHAPTERS_KEY, JSON.stringify([...list, savedChapter]));
+        } catch {}
+      }
+
+      return savedChapter;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher_chapters'] });

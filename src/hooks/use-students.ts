@@ -4,11 +4,31 @@ import { Eleve } from '@/types/database.types';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 import { calculateAccessCountdown, renewAccessCode } from '@/lib/access-code-utils';
 
-export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
+const LOCAL_STUDENTS_KEY = 'e_rdc_custom_students';
+
+export function getStoredStudents(): any[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const s = localStorage.getItem(LOCAL_STUDENTS_KEY);
+      if (s) return JSON.parse(s);
+    } catch {}
+  }
+  return [];
+}
+
+export function saveStoredStudents(list: any[]) {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(list));
+    } catch {}
+  }
+}
+
+export function useStudents(classId?: string, isSuperAdmin: boolean = false, parentId?: string) {
   const supabase = createClient();
 
   return useQuery({
-    queryKey: ['students', classId, isSuperAdmin, DEFAULT_SCHOOL_ID],
+    queryKey: ['students', classId, isSuperAdmin, parentId, DEFAULT_SCHOOL_ID],
     queryFn: async () => {
       let rawData: any[] = [];
       try {
@@ -21,6 +41,10 @@ export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
           query = query.eq('classe_id', classId);
         }
 
+        if (parentId) {
+          query = query.eq('parent_id', parentId);
+        }
+
         const { data, error } = await query;
         if (!error && data) {
           rawData = data;
@@ -29,58 +53,50 @@ export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
         console.error('Erreur chargement students:', err?.message);
       }
 
-      // Si aucune donnée distante, proposer les élèves par défaut de l'Académie
-      if (rawData.length === 0) {
-        const defaultLastUpdate = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
-        const defaultExpiration = new Date(Date.now() + 28 * 24 * 3600 * 1000).toISOString();
+      // Récupérer les étudiants locaux (créés ou inscrits via l'interface)
+      const localStudents = getStoredStudents();
 
-        rawData = [
-          {
-            id: 'child-1',
-            nom_complet: 'Joel Mukendi',
-            pseudonyme: 'Joel M.',
-            matricule: 'ADS-2025-0042',
-            code_acces: 'ADS-7842',
-            code_acces_actif: true,
-            derniere_mise_a_jour_code: defaultLastUpdate,
-            date_expiration_code: defaultExpiration,
-            forfait_actif: 'mensuel',
-            classe_id: 'classe-4eme-math',
-            classe: '4ème Humanités Math-Physique',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'child-2',
-            nom_complet: 'Sarah Kabongo Mukendi',
-            pseudonyme: 'Sarah K.',
-            matricule: 'ADS-2025-0089',
-            code_acces: 'ADS-3319',
-            code_acces_actif: true,
-            derniere_mise_a_jour_code: defaultLastUpdate,
-            date_expiration_code: defaultExpiration,
-            forfait_actif: 'mensuel',
-            classe_id: 'classe-6eme-prim',
-            classe: '6ème Primaire (TENAFEP)',
-            created_at: new Date().toISOString(),
-          },
-        ];
-      }
+      // Fusionner: rawData (Supabase) + localStudents
+      const mergedList: any[] = [...rawData];
+
+      localStudents.forEach((ls) => {
+        if (!mergedList.some((m) => m.id === ls.id)) {
+          mergedList.push(ls);
+        }
+      });
 
       // Récupérer les classes pour afficher le libellé de classe
       let classesMap: Record<string, string> = {
+        '730145b3-b30f-4aff-b0ab-c7550849d5fe': '1ère Primaire',
         'classe-4eme-math': '4ème Humanités Math-Physique',
         'classe-6eme-prim': '6ème Primaire (TENAFEP)',
       };
+
       try {
-        const { data: clsData } = await supabase.from('classes').select('id, niveau_id, option_id, vacation');
+        const { data: clsData } = await supabase.from('classes').select('id, name, vacation');
         if (clsData) {
           clsData.forEach((c: any) => {
-            classesMap[c.id] = c.vacation ? `Classe (${c.vacation})` : `Classe #${c.id.slice(0, 5)}`;
+            classesMap[c.id] = c.name || `Classe #${c.id.slice(0, 5)}`;
           });
         }
       } catch {}
 
-      return rawData.map((s: any) => {
+      // Classes custom locales
+      if (typeof window !== 'undefined') {
+        try {
+          const s = localStorage.getItem('e_rdc_custom_classes');
+          if (s) {
+            const list = JSON.parse(s);
+            list.forEach((c: any) => {
+              if (!classesMap[c.id]) {
+                classesMap[c.id] = c.nom || c.name || 'Classe';
+              }
+            });
+          }
+        } catch {}
+      }
+
+      let finalResults = mergedList.map((s: any) => {
         // Vérifier si un renouvellement local récent existe pour cet élève
         let localRenewal: any = null;
         if (typeof window !== 'undefined') {
@@ -102,13 +118,13 @@ export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
           nom_complet: s.nom_complet || s.pseudonyme || 'Élève',
           pseudonyme: s.pseudonyme || s.nom_complet || 'Élève',
           code_acces: codeAcces,
-          code_acces_actif: true,
+          code_acces_actif: s.code_acces_actif !== false,
           derniere_mise_a_jour_code: lastUpdated,
           date_expiration_code: expiresAt,
           forfait_actif: forfaitActif,
           parent: s.parent || {
-            id: s.parent_id || 'parent-1',
-            nom_complet: s.parent_nom || 'Parent Référent',
+            id: s.parent_id || null,
+            nom_complet: s.parent_nom || 'Parent / Tuteur',
           },
           classes: s.classes || {
             id: s.classe_id,
@@ -116,6 +132,16 @@ export function useStudents(classId?: string, isSuperAdmin: boolean = false) {
           },
         } as Eleve;
       });
+
+      if (parentId) {
+        finalResults = finalResults.filter((s) => s.parent_id === parentId || s.parent?.id === parentId);
+      }
+
+      if (classId) {
+        finalResults = finalResults.filter((s) => s.classe_id === classId);
+      }
+
+      return finalResults;
     },
   });
 }
@@ -163,57 +189,82 @@ export function useUpdateStudentAccessCode() {
   });
 }
 
+export interface CreateStudentPayload {
+  nom_complet?: string;
+  pseudonyme?: string;
+  matricule?: string;
+  classe_id?: string;
+  ecole_id?: string;
+  parent_id?: string;
+  parent_nom?: string;
+  parent_telephone?: string;
+  sexe?: 'M' | 'F' | string;
+}
+
 export function useCreateStudent() {
   const queryClient = useQueryClient();
   const supabase = createClient();
 
   return useMutation({
-    mutationFn: async (studentData: {
-      nom_complet?: string;
-      pseudonyme?: string;
-      matricule?: string;
-      classe_id?: string;
-      ecole_id?: string;
-    }) => {
+    mutationFn: async (studentData: CreateStudentPayload) => {
       const name = studentData.nom_complet || studentData.pseudonyme || 'Élève';
+      const pseudo = studentData.pseudonyme || name.split(' ')[0] + ' ' + (name.split(' ')[1] ? name.split(' ')[1][0] + '.' : '');
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
       const code = `ADS-${Math.floor(1000 + Math.random() * 9000)}`;
+      const studentId = `child-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
       const insertPayload: any = {
-        pseudonyme: name,
+        id: studentId,
+        pseudonyme: pseudo,
         nom_complet: name,
         code_acces: code,
         code_acces_actif: true,
         derniere_mise_a_jour_code: now.toISOString(),
         date_expiration_code: expiresAt.toISOString(),
         forfait_actif: 'mensuel',
-        matricule: studentData.matricule || `ADS-${Date.now().toString().slice(-4)}`,
+        matricule: studentData.matricule || `ADS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        parent_id: studentData.parent_id || 'parent-mukendi',
+        parent_nom: studentData.parent_nom || 'Parent Référent',
+        created_at: now.toISOString(),
       };
 
       if (studentData.classe_id) {
         insertPayload.classe_id = studentData.classe_id;
       }
 
-      const { data, error } = await supabase
-        .from('eleves')
-        .insert([insertPayload])
-        .select()
-        .single();
+      // Enregistrer dans localStorage
+      const stored = getStoredStudents();
+      saveStoredStudents([...stored, insertPayload]);
 
-      if (error) {
-        // Fallback local
-        const localStudent = {
-          id: `child-${Date.now()}`,
-          ...insertPayload,
-          created_at: now.toISOString(),
-        };
-        return localStudent;
-      }
-      return data;
+      // Tenter l'insertion Supabase
+      try {
+        const { data, error } = await supabase
+          .from('eleves')
+          .insert([
+            {
+              pseudonyme: pseudo,
+              nom_complet: name,
+              code_acces: code,
+              code_acces_actif: true,
+              matricule: insertPayload.matricule,
+              classe_id: studentData.classe_id,
+              parent_id: studentData.parent_id,
+            },
+          ])
+          .select()
+          .single();
+
+        if (!error && data) {
+          return data;
+        }
+      } catch {}
+
+      return insertPayload;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['parents'] });
     },
   });
 }

@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { useCourses, useCreateCourse } from '@/hooks/use-courses';
 import { useMatieres } from '@/hooks/use-matieres';
 import { useAllClasses } from '@/hooks/use-course-assignments';
+import { useQueryClient } from '@tanstack/react-query';
 import { RoleGuard } from '@/components/layout/role-guard';
+import { executeMesureCourseSimulation } from '@/lib/simulation/mesure-courses-simulation';
 import {
   BookOpen,
   Plus,
@@ -18,6 +20,7 @@ import {
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 
 export default function AdminCoursesPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   // By passing true as the second arg we query as superAdmin -> no filtering by single class if we didn't want to, but we don't need to specify classId
   const { data: courses, isLoading: loadingCourses } = useCourses(undefined, true);
@@ -27,10 +30,23 @@ export default function AdminCoursesPage() {
   const createCourseMutation = useCreateCourse();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [simulationStatus, setSimulationStatus] = useState<string | null>(null);
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [matiereId, setMatiereId] = useState('');
   const [classeId, setClasseId] = useState('');
+
+  const handleRunSimulation = () => {
+    const res = executeMesureCourseSimulation();
+    if (res?.success) {
+      setSimulationStatus(
+        'Simulation effectuée avec succès : 6 cours de Mesure créés (1ère à 6ème Primaire), 29 chapitres et 12 quiz TENAFEP intégrés !'
+      );
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
+      setTimeout(() => setSimulationStatus(null), 8000);
+    }
+  };
 
   const filteredCourses = courses?.filter((c) =>
     c.titre?.toLowerCase().includes(search.toLowerCase()) ||
@@ -82,7 +98,16 @@ export default function AdminCoursesPage() {
               Gérez le catalogue des cours, associez-les aux matières et aux classes.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleRunSimulation}
+              className="flex items-center gap-2 bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#B45309] border border-[#D4AF37]/50 px-4 py-2.5 rounded-xl font-bold text-sm shadow-xs transition-all active:scale-[0.98]"
+              title="Générer la simulation pédagogique complète de Mathématiques - Mesure (1ère à 6ème Primaire)"
+            >
+              <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+              <span>Simuler Cours "Mesure" (1P à 6P)</span>
+            </button>
             <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-[#0F2C59] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#0F2C59]/90 transition-all active:scale-[0.98]"
@@ -92,6 +117,22 @@ export default function AdminCoursesPage() {
             </button>
           </div>
         </div>
+
+        {/* Simulation Feedback Alert */}
+        {simulationStatus && (
+          <div className="bg-[#ECFDF5] border border-[#10B981]/30 p-4 rounded-xl flex items-center justify-between gap-3 text-sm text-[#065F46] shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-[#10B981] shrink-0" />
+              <span className="font-semibold">{simulationStatus}</span>
+            </div>
+            <button
+              onClick={() => setSimulationStatus(null)}
+              className="text-[#065F46] hover:opacity-75"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

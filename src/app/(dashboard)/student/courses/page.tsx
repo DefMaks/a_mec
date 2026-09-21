@@ -39,8 +39,8 @@ export default function StudentCoursesPage() {
               <Sparkles className="w-3 h-3 text-[#D4AF37]" />
               Mon Espace Classe (E-RDC)
             </span>
-            <span className="text-[10px] font-bold text-[#7E22CE] bg-[#FAF5FF] px-2 py-0.5 rounded-md">
-              4ème Humanités Math-Physique & STEM
+            <span className="text-[10px] font-bold text-[#0F2C59] bg-[#F1F5F9] border border-[#CBD5E1] px-2 py-0.5 rounded-md">
+              Programme National RDC • Primaire & Secondaire
             </span>
           </div>
           <h1 className="text-2xl font-extrabold text-[#0F2C59] mt-1.5">

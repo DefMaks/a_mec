@@ -80,11 +80,12 @@ export default function SettingsPage() {
               <input
                 type="text"
                 defaultValue={
-                  isTeacher
-                    ? 'Professeur Shasa'
+                  roleInfo.userName ||
+                  (isTeacher
+                    ? 'Professeur Enseignant'
                     : isParent
-                    ? 'Famille Mukendi (Parent)'
-                    : 'Administrateur Principal'
+                    ? 'Espace Parent'
+                    : 'Administrateur Principal')
                 }
                 className="w-full px-3.5 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:outline-none focus:border-[#0F2C59] text-[#1E293B]"
               />

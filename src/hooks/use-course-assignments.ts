@@ -2,8 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { CoursClasse, Cours, Classe, Profile } from '@/types/database.types';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
-
-
+import {
+  STANDARD_PROMOTIONS,
+  getStoredClassTitulaireMap,
+  saveStoredClassTitulaireMap,
+  getStoredTeacherClassesMap,
+  saveStoredTeacherClassesMap,
+  getTeacherName,
+  LOCAL_COURS_CLASSES_KEY,
+  LOCAL_CLASSES_KEY,
+} from '@/lib/constants/school-structure';
 
 export interface LearningDomain {
   id: string;
@@ -42,6 +50,12 @@ export const LEARNING_DOMAINS: LearningDomain[] = [
       'd795462b-18ed-4ac4-b1d5-126796273389',
       '5681f0fa-bc21-495c-a219-b09162372829',
       '0430841f-f4cc-4e3d-977f-91b6adf37139',
+      'sim-cours-mesure-1p',
+      'sim-cours-mesure-2p',
+      'sim-cours-mesure-3p',
+      'sim-cours-mesure-4p',
+      'sim-cours-mesure-5p',
+      'sim-cours-mesure-6p',
     ],
   },
   {
@@ -86,15 +100,57 @@ export const LEARNING_DOMAINS: LearningDomain[] = [
   },
 ];
 
-const LOCAL_STORAGE_KEY = 'e_rdc_cours_classes_assignments';
-const LOCAL_CLASSES_KEY = 'e_rdc_custom_classes';
+const LOCAL_STORAGE_KEY = LOCAL_COURS_CLASSES_KEY;
 
 export function getInitialAssignments(): CoursClasse[] {
-  return [];
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {}
+  }
+
+  // Base standard national course IDs assigned to primary class with Prof. Shasa Kanyinda
+  const defaultCourses = [
+    '98656796-d9d1-4de6-83d7-7302f4ad8d21',
+    'ce832303-22f4-4bfe-93d3-d8b27becc142',
+    'cfc2ee53-321e-4855-b528-53c460dfe25a',
+    '2d121977-a258-4fe9-97f5-34ab0bbd2a07',
+    '8e1257b9-174f-418e-990a-609dadbefcd2',
+    'd795462b-18ed-4ac4-b1d5-126796273389',
+    '5681f0fa-bc21-495c-a219-b09162372829',
+    '0430841f-f4cc-4e3d-977f-91b6adf37139',
+    '181e884f-b0af-4861-a8df-eb793e2435cb',
+    '163fa90d-d812-4760-a268-64eeaf80e5be',
+    '28ff3596-4a96-4b8c-8aae-4b01008e3a8f',
+    'fa0eedb7-9f9e-43a4-901a-771c0c7fea54',
+    '65bad74c-0c39-4a8e-9df1-1aa121da5849',
+    '45ec3ccc-dca8-4a41-9536-8dc31dd80d26',
+    '9741388b-1d36-4232-b87b-e38c3eae88db',
+    'a2b8c267-4467-4bb8-8637-7bdfbbae68b7',
+    '9190d42b-33c7-44d5-b989-f856504536ad',
+    'e58247ed-6ff8-403e-8bbc-f3f168003219',
+  ];
+
+  return defaultCourses.map((cId) => ({
+    id: `assign-${cId}-730145b3-b30f-4aff-b0ab-c7550849d5fe`,
+    cours_id: cId,
+    classe_id: '730145b3-b30f-4aff-b0ab-c7550849d5fe',
+    enseignant_id: 'b6416211-0e05-4432-85e9-c5b3b243e543',
+    est_actif: true,
+    annee_scolaire: '2025-2026',
+    created_at: new Date().toISOString(),
+  }));
 }
 
 export function saveAssignmentsLocally(assignments: CoursClasse[]) {
-  // No-op
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(assignments));
+    } catch {}
+  }
 }
 
 /**
@@ -116,7 +172,17 @@ export function useCourseAssignments(classeId?: string) {
 
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          assignments = data as CoursClasse[];
+          const remoteMap = new Map<string, CoursClasse>();
+          (data as CoursClasse[]).forEach((d) => remoteMap.set(`${d.cours_id}-${d.classe_id}`, d));
+
+          assignments.forEach((local) => {
+            const key = `${local.cours_id}-${local.classe_id}`;
+            if (!remoteMap.has(key)) {
+              remoteMap.set(key, local);
+            }
+          });
+
+          assignments = Array.from(remoteMap.values());
           saveAssignmentsLocally(assignments);
         }
       } catch (e) {
@@ -134,7 +200,7 @@ export function useCourseAssignments(classeId?: string) {
 }
 
 /**
- * Hook pour assigner un cours unique à une classe
+ * Hook pour assigner un cours unique à une classe avec option enseignant
  */
 export function useAssignCourseToClass() {
   const queryClient = useQueryClient();
@@ -149,31 +215,43 @@ export function useAssignCourseToClass() {
     }: {
       cours_id: string;
       classe_id: string;
-      enseignant_id?: string;
+      enseignant_id?: string | null;
       annee_scolaire?: string;
     }) => {
       const current = getInitialAssignments();
       const existingIndex = current.findIndex((a) => a.cours_id === cours_id && a.classe_id === classe_id);
 
+      let updated = [...current];
       if (existingIndex >= 0) {
-        const updated = [...current];
         updated[existingIndex] = {
           ...updated[existingIndex],
-          enseignant_id,
+          enseignant_id: enseignant_id || undefined,
           est_actif: true,
         };
-        saveAssignmentsLocally(updated);
       } else {
         const newAssignment: CoursClasse = {
           id: `assign-${cours_id}-${classe_id}-${Date.now()}`,
           cours_id,
           classe_id,
-          enseignant_id,
+          enseignant_id: enseignant_id || undefined,
           est_actif: true,
           annee_scolaire,
           created_at: new Date().toISOString(),
         };
-        saveAssignmentsLocally([...current, newAssignment]);
+        updated.push(newAssignment);
+      }
+
+      saveAssignmentsLocally(updated);
+
+      // S'assurer que la classe est rattachée à l'enseignant
+      if (enseignant_id) {
+        const teacherMap = getStoredTeacherClassesMap();
+        const currentEntry = teacherMap[enseignant_id] || { classIds: [], titulaireClassIds: [] };
+        if (!currentEntry.classIds.includes(classe_id)) {
+          currentEntry.classIds.push(classe_id);
+          teacherMap[enseignant_id] = currentEntry;
+          saveStoredTeacherClassesMap(teacherMap);
+        }
       }
 
       try {
@@ -181,7 +259,7 @@ export function useAssignCourseToClass() {
           {
             cours_id,
             classe_id,
-            enseignant_id,
+            enseignant_id: enseignant_id || null,
             est_actif: true,
             annee_scolaire,
           },
@@ -194,6 +272,8 @@ export function useAssignCourseToClass() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['classes_list'] });
       queryClient.invalidateQueries({ queryKey: ['teacher-chapters'] });
       queryClient.invalidateQueries({ queryKey: ['student-courses'] });
     },
@@ -233,7 +313,7 @@ export function useUnassignCourseFromClass() {
 }
 
 /**
- * Hook pour assigner en lot une liste de cours à une classe (par Domaine ou Programme complet)
+ * Hook pour assigner en lot une liste de cours à une classe
  */
 export function useBulkAssignCourses() {
   const queryClient = useQueryClient();
@@ -248,7 +328,7 @@ export function useBulkAssignCourses() {
     }: {
       cours_ids: string[];
       classe_id: string;
-      enseignant_id?: string;
+      enseignant_id?: string | null;
       annee_scolaire?: string;
     }) => {
       const current = getInitialAssignments();
@@ -261,7 +341,7 @@ export function useBulkAssignCourses() {
         if (existingIdx >= 0) {
           updatedList[existingIdx] = {
             ...updatedList[existingIdx],
-            enseignant_id,
+            enseignant_id: enseignant_id || undefined,
             est_actif: true,
           };
         } else {
@@ -269,7 +349,7 @@ export function useBulkAssignCourses() {
             id: `assign-${cId}-${classe_id}-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
             cours_id: cId,
             classe_id,
-            enseignant_id,
+            enseignant_id: enseignant_id || undefined,
             est_actif: true,
             annee_scolaire,
             created_at: new Date().toISOString(),
@@ -279,13 +359,24 @@ export function useBulkAssignCourses() {
         newRows.push({
           cours_id: cId,
           classe_id,
-          enseignant_id,
+          enseignant_id: enseignant_id || null,
           est_actif: true,
           annee_scolaire,
         });
       });
 
       saveAssignmentsLocally(updatedList);
+
+      // S'assurer que la classe est rattachée à l'enseignant
+      if (enseignant_id) {
+        const teacherMap = getStoredTeacherClassesMap();
+        const currentEntry = teacherMap[enseignant_id] || { classIds: [], titulaireClassIds: [] };
+        if (!currentEntry.classIds.includes(classe_id)) {
+          currentEntry.classIds.push(classe_id);
+          teacherMap[enseignant_id] = currentEntry;
+          saveStoredTeacherClassesMap(teacherMap);
+        }
+      }
 
       try {
         await supabase.from('cours_classes').upsert(newRows, { onConflict: 'cours_id,classe_id' });
@@ -296,6 +387,8 @@ export function useBulkAssignCourses() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['classes_list'] });
       queryClient.invalidateQueries({ queryKey: ['teacher-chapters'] });
       queryClient.invalidateQueries({ queryKey: ['student-courses'] });
     },
@@ -342,6 +435,172 @@ export function useBulkUnassignCourses() {
 }
 
 /**
+ * Hook pour assigner un professeur spécifiquement à des cours dans une promotion
+ * (assigner un professeur à des cours par rapport aux promotions auxquelles il est assigné)
+ */
+export function useAssignTeacherToPromotionCourses() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async ({
+      teacherId,
+      classId,
+      assignedCourseIds,
+      unassignedCourseIds = [],
+    }: {
+      teacherId: string;
+      classId: string;
+      assignedCourseIds: string[];
+      unassignedCourseIds?: string[];
+    }) => {
+      const current = getInitialAssignments();
+      let updated = [...current];
+
+      // 1. Assigner les cours sélectionnés à cet enseignant
+      assignedCourseIds.forEach((cId) => {
+        const idx = updated.findIndex((a) => a.cours_id === cId && a.classe_id === classId);
+        if (idx >= 0) {
+          updated[idx] = {
+            ...updated[idx],
+            enseignant_id: teacherId,
+            est_actif: true,
+          };
+        } else {
+          updated.push({
+            id: `assign-${cId}-${classId}-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+            cours_id: cId,
+            classe_id: classId,
+            enseignant_id: teacherId,
+            est_actif: true,
+            annee_scolaire: '2025-2026',
+            created_at: new Date().toISOString(),
+          });
+        }
+      });
+
+      // 2. Retirer l'enseignant des cours désélectionnés
+      unassignedCourseIds.forEach((cId) => {
+        const idx = updated.findIndex((a) => a.cours_id === cId && a.classe_id === classId);
+        if (idx >= 0 && updated[idx].enseignant_id === teacherId) {
+          updated[idx] = {
+            ...updated[idx],
+            enseignant_id: undefined,
+          };
+        }
+      });
+
+      saveAssignmentsLocally(updated);
+
+      // 3. S'assurer que le professeur a cette promotion dans ses classes assignées
+      const teacherMap = getStoredTeacherClassesMap();
+      const currentEntry = teacherMap[teacherId] || { classIds: [], titulaireClassIds: [] };
+      if (!currentEntry.classIds.includes(classId)) {
+        currentEntry.classIds.push(classId);
+        teacherMap[teacherId] = currentEntry;
+        saveStoredTeacherClassesMap(teacherMap);
+      }
+
+      try {
+        const upsertRows = assignedCourseIds.map((cId) => ({
+          cours_id: cId,
+          classe_id: classId,
+          enseignant_id: teacherId,
+          est_actif: true,
+          annee_scolaire: '2025-2026',
+        }));
+
+        if (upsertRows.length > 0) {
+          await supabase.from('cours_classes').upsert(upsertRows, { onConflict: 'cours_id,classe_id' });
+        }
+      } catch {}
+
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['classes_list'] });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      queryClient.invalidateQueries({ queryKey: ['all_classes'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-chapters'] });
+    },
+  });
+}
+
+/**
+ * Hook pour changer ou définir le titulaire d'une promotion
+ */
+export function useUpdateClassTitulaire() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async ({ classId, titulaireId }: { classId: string; titulaireId?: string | null }) => {
+      // 1. Sauvegarder dans la cartographie des titulaires
+      const titulaireMap = getStoredClassTitulaireMap();
+      if (titulaireId) {
+        titulaireMap[classId] = titulaireId;
+      } else {
+        delete titulaireMap[classId];
+      }
+      saveStoredClassTitulaireMap(titulaireMap);
+
+      // 2. Mettre à jour les classes custom locales
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem(LOCAL_CLASSES_KEY);
+          if (stored) {
+            const list = JSON.parse(stored);
+            const idx = list.findIndex((c: any) => c.id === classId);
+            if (idx >= 0) {
+              list[idx].titulaire_id = titulaireId || null;
+              localStorage.setItem(LOCAL_CLASSES_KEY, JSON.stringify(list));
+            }
+          }
+        } catch {}
+      }
+
+      // 3. Synchroniser la cartographie des enseignants
+      const teacherMap = getStoredTeacherClassesMap();
+      Object.keys(teacherMap).forEach((tId) => {
+        if (tId === titulaireId) {
+          if (!teacherMap[tId].classIds.includes(classId)) {
+            teacherMap[tId].classIds.push(classId);
+          }
+          if (!teacherMap[tId].titulaireClassIds.includes(classId)) {
+            teacherMap[tId].titulaireClassIds.push(classId);
+          }
+        } else {
+          teacherMap[tId].titulaireClassIds = (teacherMap[tId].titulaireClassIds || []).filter(
+            (id) => id !== classId
+          );
+        }
+      });
+      saveStoredTeacherClassesMap(teacherMap);
+
+      // 4. Tenter la mise à jour Supabase
+      try {
+        await supabase
+          .from('classes')
+          .update({ titulaire_id: titulaireId || null })
+          .eq('id', classId);
+      } catch {}
+
+      return { classId, titulaireId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes_list'] });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      queryClient.invalidateQueries({ queryKey: ['all_classes'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['cours_classes'] });
+    },
+  });
+}
+
+/**
  * Hook pour gérer les classes (lecture et création de classes par l'Admin)
  */
 export function useAllClasses() {
@@ -358,31 +617,69 @@ export function useAllClasses() {
         } catch {}
       }
 
+      let remoteClasses: Classe[] = [];
       try {
         const { data, error } = await supabase
           .from('classes')
           .select('*, niveaux(*), profiles(*)');
 
         if (!error && data && data.length > 0) {
-          const mapped = data.map((c: any) => ({
+          remoteClasses = data.map((c: any) => ({
             ...c,
             nom: c.name || c.nom || 'Classe',
             titulaire_id: c.titulaire_id || null,
           })) as Classe[];
-
-          const merged = [...mapped];
-          customClasses.forEach((cc) => {
-            if (!merged.some((m) => m.id === cc.id)) {
-              merged.push(cc);
-            }
-          });
-          return merged;
         }
       } catch {}
 
-      return customClasses as Classe[];
+      // Fusionner : Base standard ADS + Données distantes + Créations locales
+      const mergedMap = new Map<string, Classe>();
+
+      STANDARD_PROMOTIONS.forEach((sc) => {
+        mergedMap.set(sc.id, { ...sc });
+      });
+
+      remoteClasses.forEach((rc) => {
+        const existing = mergedMap.get(rc.id);
+        mergedMap.set(rc.id, {
+          ...(existing || {}),
+          ...rc,
+          nom: rc.nom || existing?.nom || 'Classe',
+        } as Classe);
+      });
+
+      customClasses.forEach((cc) => {
+        const existing = mergedMap.get(cc.id);
+        mergedMap.set(cc.id, {
+          ...(existing || {}),
+          ...cc,
+          nom: cc.nom || existing?.nom || 'Classe',
+        } as Classe);
+      });
+
+      // Appliquer les titulariats à jour
+      const titulaireMap = getStoredClassTitulaireMap();
+      const finalClasses = Array.from(mergedMap.values()).map((c) => {
+        const titulaireId = titulaireMap[c.id] !== undefined ? titulaireMap[c.id] : c.titulaire_id;
+        const teacherName = getTeacherName(titulaireId);
+        return {
+          ...c,
+          titulaire_id: titulaireId,
+          profiles: titulaireId
+            ? {
+                id: titulaireId,
+                nom_complet: teacherName,
+                role: 'teacher',
+                ecole_id: DEFAULT_SCHOOL_ID,
+                created_at: '',
+              }
+            : undefined,
+        } as Classe;
+      });
+
+      return finalClasses;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30,
   });
 }
 
@@ -438,6 +735,7 @@ export function useCreateAdminClass() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes_list'] });
       queryClient.invalidateQueries({ queryKey: ['classes'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
     },
   });
 }

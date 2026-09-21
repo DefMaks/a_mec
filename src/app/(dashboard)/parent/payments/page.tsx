@@ -371,7 +371,7 @@ export default function ParentPaymentsPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3.5 font-semibold text-[#1E293B]">
-                      {p.eleve?.pseudonyme || 'Joel Mukendi'}
+                      {p.eleve?.pseudonyme || p.eleve?.nom_complet || 'Élève inscrit'}
                     </td>
                     <td className="px-5 py-3.5 font-tabular font-bold text-[#0F2C59]">
                       ${p.montant}.00 {p.devise || 'USD'}

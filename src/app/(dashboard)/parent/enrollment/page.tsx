@@ -65,51 +65,32 @@ export default function ParentEnrollmentPage() {
     ecolePrecedente: '',
     pourcentagePrecedent: '',
     // Step 3: Parent/Guardian
-    parentNom: 'Mukendi Jean-Pierre',
-    parentLien: 'Père',
-    parentTel: '+243 81 234 5678',
-    parentEmail: 'parent@academiedusalut.cd',
-    parentProfession: 'Ingénieur',
-    adresseKinshasa: 'Av. de la Paix N° 45, Q. Ma Campagne, C. Ngaliema',
+    parentNom: '',
+    parentLien: 'Tuteur légal',
+    parentTel: '',
+    parentEmail: '',
+    parentProfession: '',
+    adresseKinshasa: '',
     // Step 4: Documents
-    bulletinAttached: true,
-    acteNaissanceAttached: true,
-    photoAttached: true,
+    bulletinAttached: false,
+    acteNaissanceAttached: false,
+    photoAttached: false,
     certificatMedicalAttached: false,
     // Step 5: Payment
     modePaiement: 'mpesa',
     fraisDossierPayes: false,
   });
 
-  // Sample existing applications
-  const [applications, setApplications] = useState<EnrollmentApplication[]>([
-    {
-      id: 'ENR-2026-0012',
-      childName: 'Grace Mukendi',
-      gender: 'F',
-      birthDate: '12/04/2012',
-      level: '7ème Éducation de Base',
-      option: 'Tronc Commun STEM',
-      parentName: 'Mukendi Jean-Pierre',
-      parentPhone: '+243 81 234 5678',
-      status: 'ACCEPTED',
-      submissionDate: '20/08/2026',
-      documentsCount: 4,
-    },
-    {
-      id: 'ENR-2026-0045',
-      childName: 'David Mukendi',
-      gender: 'M',
-      birthDate: '05/11/2016',
-      level: '3ème Primaire',
-      option: 'Cycle Primaire Général',
-      parentName: 'Mukendi Jean-Pierre',
-      parentPhone: '+243 81 234 5678',
-      status: 'UNDER_REVIEW',
-      submissionDate: '22/08/2026',
-      documentsCount: 3,
-    },
-  ]);
+  // Applications list
+  const [applications, setApplications] = useState<EnrollmentApplication[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('ads_enrollment_applications');
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return [];
+  });
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -137,7 +118,15 @@ export default function ParentEnrollmentPage() {
           submissionDate: new Date().toLocaleDateString('fr-FR'),
           documentsCount: 3,
         };
-        setApplications((prev) => [newApp, ...prev]);
+        setApplications((prev) => {
+          const updated = [newApp, ...prev];
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('ads_enrollment_applications', JSON.stringify(updated));
+            } catch {}
+          }
+          return updated;
+        });
       }, 800);
     }
   };

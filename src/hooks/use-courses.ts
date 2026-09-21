@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DEFAULT_SCHOOL_ID } from '@/lib/config';
 import { getInitialAssignments } from './use-course-assignments';
+import { STANDARD_PROMOTIONS, BASE_TEACHERS } from '@/lib/constants/school-structure';
+import { MESURE_PRIMARY_COURSES } from '@/lib/simulation/mesure-courses-simulation';
 
 export interface ChapterItem {
   id: string;
@@ -36,6 +38,27 @@ export interface CourseItem {
 
 export type Course = CourseItem;
 
+export const LOCAL_COURSES_KEY = 'e_rdc_custom_courses_v1';
+export const LOCAL_CHAPTERS_KEY = 'e_rdc_custom_chapters_v1';
+
+export function getStoredCourses(): CourseItem[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_COURSES_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+  }
+  return [];
+}
+
+export function saveStoredCourses(courses: CourseItem[]) {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_COURSES_KEY, JSON.stringify(courses));
+    } catch {}
+  }
+}
+
 export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
   const supabase = getSupabaseBrowserClient();
 
@@ -43,19 +66,35 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
     queryKey: ['courses', classeId, isSuperAdmin],
     queryFn: async (): Promise<CourseItem[]> => {
       try {
-        const query = supabase
-          .from('cours')
-          .select('*')
-          .order('created_at', { ascending: false });
+        let coursData: any[] = [];
+        try {
+          const { data, error } = await supabase
+            .from('cours')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        const { data: coursData, error: coursError } = await query;
-
-        if (coursError) {
-          console.error('Erreur récupération cours:', coursError.message);
-          return [];
+          if (!error && data) {
+            coursData = data;
+          }
+        } catch (err: any) {
+          console.warn('Erreur chargement cours Supabase:', err?.message);
         }
 
-        if (!coursData || coursData.length === 0) {
+        // Récupérer les cours stockés localement ou la base de simulation
+        const localCourses = getStoredCourses();
+        const baseSimulated = localCourses.length > 0 ? localCourses : MESURE_PRIMARY_COURSES;
+
+        // Fusion sans doublon par ID
+        const coursesMap = new Map<string, any>();
+        baseSimulated.forEach((c) => coursesMap.set(c.id, c));
+        coursData.forEach((c) => {
+          const existing = coursesMap.get(c.id);
+          coursesMap.set(c.id, { ...existing, ...c });
+        });
+
+        const mergedCourses = Array.from(coursesMap.values());
+
+        if (mergedCourses.length === 0) {
           return [];
         }
 
@@ -64,9 +103,7 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
 
         try {
           const { data: mData } = await supabase.from('matiere').select('*');
-          if (mData) {
-            matieresList = mData;
-          }
+          if (mData) matieresList = mData;
         } catch {}
 
         try {
@@ -74,18 +111,33 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
           if (chData) chapitresList = chData;
         } catch {}
 
+        // Récupérer les chapitres locaux
+        if (typeof window !== 'undefined') {
+          try {
+            const rawCh = localStorage.getItem(LOCAL_CHAPTERS_KEY);
+            if (rawCh) {
+              const localCh = JSON.parse(rawCh);
+              localCh.forEach((lch: any) => {
+                if (!chapitresList.some((c) => c.id === lch.id)) {
+                  chapitresList.push(lch);
+                }
+              });
+            }
+          } catch {}
+        }
+
         const assignments = getInitialAssignments();
 
-        const allMapped = coursData.map((item: any) => {
+        const allMapped = mergedCourses.map((item: any) => {
           const matchedMatiere = matieresList.find((m) => m.id === item.matiere_id);
-          const matchedChapitres = chapitresList.filter((ch) => ch.cours_id === item.id);
+          
+          // Chapitres associés
+          let matchedChapitres = chapitresList.filter((ch) => ch.cours_id === item.id);
+          if (matchedChapitres.length === 0 && Array.isArray(item.chapitres)) {
+            matchedChapitres = item.chapitres;
+          }
 
-          const chapitres = (matchedChapitres.length > 0
-            ? matchedChapitres
-            : Array.isArray(item.chapitres)
-            ? item.chapitres
-            : []
-          ).map((ch: any, idx: number) => ({
+          const chapitres = matchedChapitres.map((ch: any, idx: number) => ({
             id: ch.id || `ch-${idx + 1}`,
             cours_id: item.id,
             titre: ch.titre || `Chapitre ${idx + 1}`,
@@ -96,10 +148,18 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
             pdf_url: ch.pdf_url || null,
           }));
 
-          const matiereNom = matchedMatiere?.nom || item.matiere_nom || item.matiere || 'Discipline Générale';
-          
-          // Chercher l'assignation de classe
+          const matiereNom =
+            matchedMatiere?.nom || item.matiere_nom || item.matiere || 'Mathématiques';
+
+          // Résolution dynamique de la classe et de l'enseignant
           const assignedClasse = assignments.find((a) => a.cours_id === item.id);
+          const targetClassId = assignedClasse?.classe_id || item.classe_id;
+          const promo = STANDARD_PROMOTIONS.find((p) => p.id === targetClassId);
+          const targetClassName = promo?.nom || item.classe || (assignedClasse ? 'Classe Assignée' : 'Toutes les Classes');
+
+          const targetTeacherId = assignedClasse?.enseignant_id || item.enseignant_id || promo?.titulaire_id;
+          const matchedTeacher = BASE_TEACHERS.find((t) => t.id === targetTeacherId);
+          const targetTeacherName = matchedTeacher?.nom_complet || item.enseignant_nom || 'Professeur Titulaire';
 
           return {
             id: item.id,
@@ -108,10 +168,10 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
             matiere_id: item.matiere_id,
             matiere_nom: matiereNom,
             matiere: matiereNom,
-            classe: assignedClasse ? '1ère Primaire' : item.classe || '1ère Primaire',
-            classe_id: assignedClasse?.classe_id || undefined,
-            enseignant_id: assignedClasse?.enseignant_id || undefined,
-            enseignant_nom: 'Prof. Shasa Kanyinda',
+            classe: targetClassName,
+            classe_id: targetClassId,
+            enseignant_id: targetTeacherId,
+            enseignant_nom: targetTeacherName,
             chapitres_count: chapitres.length,
             chapitres: chapitres,
             created_at: item.created_at || new Date().toISOString(),
@@ -187,6 +247,15 @@ export function useCreateCourse() {
           created_at: new Date().toISOString(),
         };
       }
+
+      // Persistance dans le cache local des cours
+      try {
+        const stored = getStoredCourses();
+        saveStoredCourses([
+          insertedCourse,
+          ...stored.filter((c) => c.id !== insertedCourse.id),
+        ]);
+      } catch {}
 
       // Assigner à la table cours_classes
       const targetClasses = courseData.target_classe_ids && courseData.target_classe_ids.length > 0

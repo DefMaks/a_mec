@@ -54,6 +54,32 @@ export const ROLE_DEFINITIONS: Record<string, RoleInfo> = {
   },
 };
 
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  super_admin: 1,
+  admin: 2,
+  teacher: 3,
+  parent: 4,
+  student: 5,
+};
+
+/**
+ * Règle de gouvernance E-RDC:
+ * super_admin > admin > professeur
+ * - Super administrateur : CRU tout le monde (super_admin, admin, teacher, parent, student)
+ * - Administrateur : CRU des Administrateurs et des Professeurs (ne peut pas créer ou modifier un super_admin)
+ * - Parent : Crée et gère ses enfants (student)
+ */
+export function canUserManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
+  if (actorRole === 'super_admin') return true;
+  if (actorRole === 'admin') {
+    return targetRole === 'admin' || targetRole === 'teacher';
+  }
+  if (actorRole === 'parent') {
+    return targetRole === 'student';
+  }
+  return false;
+}
+
 interface RoleContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
@@ -62,6 +88,7 @@ interface RoleContextType {
   isAdmin: boolean;
   isTeacher: boolean;
   isParent: boolean;
+  canManageRole: (targetRole: UserRole) => boolean;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -93,6 +120,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         isAdmin: role === 'admin' || role === 'super_admin',
         isTeacher: role === 'teacher',
         isParent: role === 'parent',
+        canManageRole: (targetRole: UserRole) => canUserManageRole(role, targetRole),
       }}
     >
       {children}
