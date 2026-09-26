@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   useTeacherMe,
   useTeacherChapters,
@@ -11,6 +12,13 @@ import {
   TeacherChapter,
 } from '@/hooks/use-teacher-data';
 import { useCreateCourse } from '@/hooks/use-courses';
+import {
+  useQuizzes,
+  useQuizAttachments,
+  useAttachQuizToLesson,
+  useDetachQuizFromLesson,
+  QuizItem,
+} from '@/hooks/use-quizzes';
 import {
   BookOpen,
   FileText,
@@ -30,6 +38,11 @@ import {
   X,
   AlertCircle,
   GraduationCap,
+  HelpCircle,
+  Link as LinkIcon,
+  ExternalLink,
+  Award,
+  FileCheck,
 } from 'lucide-react';
 import { TipTapEditor } from '@/components/editor/tiptap-editor';
 import { RichTextView } from '@/components/editor/rich-text-view';
@@ -48,6 +61,12 @@ export default function TeacherCoursesPage() {
   const deleteChapterMutation = useDeleteChapter();
   const createCourseMutation = useCreateCourse();
 
+  // Quiz queries and mutations for lesson attachments
+  const { data: quizzes } = useQuizzes();
+  const { data: quizAttachments } = useQuizAttachments();
+  const attachQuizMutation = useAttachQuizToLesson();
+  const detachQuizMutation = useDetachQuizFromLesson();
+
   // State
   const [activeTab, setActiveTab] = useState<'chapters' | 'courses'>('chapters');
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +79,12 @@ export default function TeacherCoursesPage() {
   const [previewChapter, setPreviewChapter] = useState<TeacherChapter | null>(null);
   const [editingChapter, setEditingChapter] = useState<TeacherChapter | null>(null);
 
+  // Attach Quiz Modal State
+  const [isAttachQuizModalOpen, setIsAttachQuizModalOpen] = useState(false);
+  const [attachingChapter, setAttachingChapter] = useState<TeacherChapter | null>(null);
+  const [selectedQuizIdToAttach, setSelectedQuizIdToAttach] = useState('');
+  const [previewingQuiz, setPreviewingQuiz] = useState<QuizItem | null>(null);
+
   // Chapter Form State
   const [chapterCoursId, setChapterCoursId] = useState('');
   const [chapterTitre, setChapterTitre] = useState('');
@@ -68,6 +93,7 @@ export default function TeacherCoursesPage() {
   const [chapterContenu, setChapterContenu] = useState('');
   const [chapterAudioUrl, setChapterAudioUrl] = useState('');
   const [chapterPdfUrl, setChapterPdfUrl] = useState('');
+  const [chapterQuizId, setChapterQuizId] = useState('');
   const [chapterFormError, setChapterFormError] = useState<string | null>(null);
 
   // Course Form State
@@ -113,6 +139,7 @@ export default function TeacherCoursesPage() {
     setChapterContenu('');
     setChapterAudioUrl('');
     setChapterPdfUrl('');
+    setChapterQuizId('');
     setChapterFormError(null);
     setIsChapterModalOpen(true);
   };
@@ -127,6 +154,8 @@ export default function TeacherCoursesPage() {
     setChapterContenu(ch.contenu_html || ch.contenu || '');
     setChapterAudioUrl(ch.audio_url || '');
     setChapterPdfUrl(ch.pdf_url || '');
+    const currentAttachedQuiz = quizAttachments?.[ch.id]?.quiz_id || '';
+    setChapterQuizId(currentAttachedQuiz);
     setChapterFormError(null);
     setIsChapterModalOpen(true);
   };
@@ -146,6 +175,7 @@ export default function TeacherCoursesPage() {
     }
 
     try {
+      let savedChapterId = '';
       if (editingChapter) {
         await updateChapterMutation.mutateAsync({
           id: editingChapter.id,
@@ -156,8 +186,9 @@ export default function TeacherCoursesPage() {
           audio_url: chapterAudioUrl.trim() || undefined,
           pdf_url: chapterPdfUrl.trim() || undefined,
         });
+        savedChapterId = editingChapter.id;
       } else {
-        await createChapterMutation.mutateAsync({
+        const created = await createChapterMutation.mutateAsync({
           cours_id: chapterCoursId,
           titre: chapterTitre,
           contenu_html: chapterContenu,
@@ -168,6 +199,25 @@ export default function TeacherCoursesPage() {
           pdf_url: chapterPdfUrl.trim() || undefined,
           createur_id: profileId || undefined,
           ecole_id: me?.ecole?.id || undefined,
+        });
+        savedChapterId = created?.id || `ch-${Date.now()}`;
+      }
+
+      // Synchroniser le quiz rattaché
+      if (chapterQuizId && savedChapterId) {
+        const chosenQuiz = quizzes?.find((q) => q.id === chapterQuizId);
+        await attachQuizMutation.mutateAsync({
+          quiz_id: chapterQuizId,
+          quiz_titre: chosenQuiz?.titre || 'Évaluation',
+          chapitre_id: savedChapterId,
+          chapitre_titre: chapterTitre,
+          cours_id: chapterCoursId,
+          cours_titre: coursList.find((c) => c.id === chapterCoursId)?.titre,
+        });
+      } else if (editingChapter && quizAttachments?.[editingChapter.id] && !chapterQuizId) {
+        await detachQuizMutation.mutateAsync({
+          chapitre_id: editingChapter.id,
+          quiz_id: quizAttachments[editingChapter.id].quiz_id,
         });
       }
 
@@ -438,6 +488,101 @@ export default function TeacherCoursesPage() {
                     <p className="text-xs text-[#475569] mt-2.5 line-clamp-2 bg-[#F8FAFC] p-2.5 rounded-xl border border-[#F1F5F9] leading-relaxed">
                       {stripHtmlTags(ch.contenu_html || ch.contenu) || 'Aucun résumé textuel fourni.'}
                     </p>
+
+                    {/* Quiz Attachment Status Banner */}
+                    <div className="mt-3">
+                      {(() => {
+                        const attachedQuizInfo = quizAttachments?.[ch.id];
+                        const attachedQuiz = (quizzes || []).find(
+                          (q) => q.id === attachedQuizInfo?.quiz_id || q.chapitre_id === ch.id
+                        );
+
+                        if (attachedQuiz) {
+                          return (
+                            <div className="p-2.5 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-6 h-6 rounded-lg bg-[#DCFCE7] flex items-center justify-center text-[#16A34A] flex-shrink-0">
+                                  <HelpCircle className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold text-[#15803D] uppercase tracking-wider">Quiz rattaché</span>
+                                    <span className="text-[10px] font-semibold text-[#16A34A] bg-white px-1.5 py-0.2 rounded border border-[#86EFAC]">10 Questions</span>
+                                  </div>
+                                  <span className="text-xs font-bold text-[#0F2C59] truncate block mt-0.5">
+                                    {attachedQuiz.titre}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewingQuiz(attachedQuiz)}
+                                  className="px-2 py-1 text-[#0F2C59] hover:bg-white rounded-lg text-[10px] font-bold border border-[#CBD5E1] cursor-pointer"
+                                  title="Aperçu des questions du quiz"
+                                >
+                                  Aperçu
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAttachingChapter(ch);
+                                    setSelectedQuizIdToAttach(attachedQuiz.id);
+                                    setIsAttachQuizModalOpen(true);
+                                  }}
+                                  className="px-2 py-1 text-[#15803D] hover:bg-white rounded-lg text-[10px] font-bold border border-[#86EFAC] cursor-pointer"
+                                  title="Changer de quiz rattaché"
+                                >
+                                  Changer
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm('Délier ce quiz de la leçon ?')) {
+                                      await detachQuizMutation.mutateAsync({ chapitre_id: ch.id, quiz_id: attachedQuiz.id });
+                                    }
+                                  }}
+                                  className="px-1.5 py-1 text-[#DC2626] hover:bg-white rounded-lg text-[10px] font-bold border border-[#FECACA] cursor-pointer"
+                                  title="Délier ce quiz"
+                                >
+                                  Délier
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="p-2.5 rounded-xl bg-[#FFFBEB] border border-[#FEF3C7] flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 text-xs text-[#92400E]">
+                              <AlertCircle className="w-3.5 h-3.5 text-[#D97706] flex-shrink-0" />
+                              <span className="text-[11px] font-medium">Aucun quiz rattaché</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAttachingChapter(ch);
+                                  setSelectedQuizIdToAttach(quizzes?.[0]?.id || '');
+                                  setIsAttachQuizModalOpen(true);
+                                }}
+                                className="px-2.5 py-1 bg-white hover:bg-[#F8FAFC] text-[#0F2C59] border border-[#CBD5E1] rounded-lg text-[11px] font-bold shadow-2xs flex items-center gap-1 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3 text-[#D4AF37]" />
+                                <span>Lier un Quiz</span>
+                              </button>
+                              <Link
+                                href={`/teacher/quizzes/new?coursId=${ch.cours_id}&chapitreId=${ch.id}`}
+                                className="px-2 py-1 bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white rounded-lg text-[10px] font-bold shadow-2xs flex items-center gap-1 cursor-pointer"
+                                title="Créer un nouveau quiz spécifique pour cette leçon"
+                              >
+                                <span>+ Créer Quiz</span>
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* Footer & Actions */}
@@ -695,6 +840,41 @@ export default function TeacherCoursesPage() {
                 </div>
               </div>
 
+              {/* Quiz d'évaluation rattaché */}
+              <div className="bg-[#FFFBEB] border border-[#D4AF37]/30 rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-[#0F2C59] flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Quiz d'Évaluation Standardisé (10 Questions QCM)</span>
+                  </label>
+                  {chapterCoursId && (
+                    <Link
+                      href={`/teacher/quizzes/new?coursId=${chapterCoursId}`}
+                      target="_blank"
+                      className="text-[11px] font-bold text-[#0F2C59] hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3 text-[#D4AF37]" />
+                      <span>Créer un nouveau quiz</span>
+                    </Link>
+                  )}
+                </div>
+                <select
+                  value={chapterQuizId}
+                  onChange={(e) => setChapterQuizId(e.target.value)}
+                  className="w-full bg-white border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
+                >
+                  <option value="">-- Aucun quiz rattaché (ou lier plus tard) --</option>
+                  {(quizzes || []).map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.titre} ({q.matiere_nom || q.classe || 'Général'} - {q.total_questions || 10} Qs)
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-[#64748B]">
+                  Lier un quiz permet aux élèves de tester leurs acquis immédiatement après avoir lu la leçon.
+                </p>
+              </div>
+
               {/* Buttons */}
               <div className="flex justify-end gap-3 pt-3 border-t border-[#F1F5F9]">
                 <button
@@ -910,6 +1090,252 @@ export default function TeacherCoursesPage() {
               <button
                 onClick={() => setPreviewChapter(null)}
                 className="px-4 py-2 bg-[#0F2C59] text-white text-xs font-bold rounded-xl"
+              >
+                Fermer l'aperçu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8) Modal: Attach / Link Quiz to Chapter */}
+      {isAttachQuizModalOpen && attachingChapter && (
+        <div className="fixed inset-0 bg-[#0F2C59]/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#0F2C59] text-[#D4AF37] flex items-center justify-center font-bold">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-[#0F2C59]">
+                    Rattacher un Quiz (10 Questions)
+                  </h2>
+                  <p className="text-[11px] text-[#64748B] truncate max-w-xs">
+                    Leçon : {attachingChapter.titre}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAttachQuizModalOpen(false);
+                  setAttachingChapter(null);
+                }}
+                className="text-[#94A3B8] hover:text-[#0F2C59] text-sm p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0] space-y-1">
+                <div className="text-[11px] text-[#64748B]">
+                  <strong>Cours parent :</strong> {attachingChapter.cours?.titre || 'Cours Général'}
+                </div>
+                <div className="text-[11px] text-[#64748B]">
+                  <strong>Discipline :</strong> {attachingChapter.cours?.matiere_nom || 'Discipline'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#0F2C59] mb-1.5">
+                  Sélectionnez le quiz d'évaluation à associer :
+                </label>
+                {(!quizzes || quizzes.length === 0) ? (
+                  <div className="bg-[#FFFBEB] p-3 rounded-xl border border-[#D4AF37]/30 text-[#92400E] text-xs space-y-2">
+                    <p>Aucun quiz n'a encore été créé dans l'espace enseignant.</p>
+                    <Link
+                      href={`/teacher/quizzes/new?coursId=${attachingChapter.cours_id}&chapitreId=${attachingChapter.id}`}
+                      className="inline-block px-3 py-1.5 bg-[#0F2C59] text-white rounded-lg text-xs font-bold shadow-xs"
+                    >
+                      + Créer un nouveau quiz (10 Questions)
+                    </Link>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedQuizIdToAttach}
+                    onChange={(e) => setSelectedQuizIdToAttach(e.target.value)}
+                    className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-2.5 text-xs text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/30"
+                  >
+                    <option value="">-- Choisir une évaluation standardisée --</option>
+                    {quizzes.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.titre} ({q.matiere_nom || q.classe || 'Standard'} • {q.total_questions || 10} Qs)
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {selectedQuizIdToAttach && (
+                <div className="bg-[#F0FDF4] border border-[#BBF7D0] p-3 rounded-xl space-y-1 text-xs">
+                  {(() => {
+                    const sel = quizzes?.find((q) => q.id === selectedQuizIdToAttach);
+                    if (!sel) return null;
+                    return (
+                      <>
+                        <div className="font-bold text-[#166534] flex items-center justify-between">
+                          <span>{sel.titre}</span>
+                          <span className="text-[10px] bg-white border border-[#86EFAC] px-2 py-0.5 rounded text-[#15803D]">
+                            {sel.niveau} • {sel.classe}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#166534]">
+                          {sel.total_questions || 10} questions QCM • Durée : {sel.duree_minutes} minutes
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewingQuiz(sel)}
+                          className="mt-1.5 text-[11px] font-bold text-[#0F2C59] underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Prévisualiser les 10 questions de ce quiz</span>
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2">
+                <Link
+                  href={`/teacher/quizzes/new?coursId=${attachingChapter.cours_id}&chapitreId=${attachingChapter.id}`}
+                  className="text-[11px] font-bold text-[#0F2C59] hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>Créer un nouveau quiz dédié</span>
+                </Link>
+
+                {quizAttachments?.[attachingChapter.id] && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (confirm('Voulez-vous détacher ce quiz de la leçon ?')) {
+                        await detachQuizMutation.mutateAsync({
+                          chapitre_id: attachingChapter.id,
+                          quiz_id: quizAttachments[attachingChapter.id].quiz_id,
+                        });
+                        setIsAttachQuizModalOpen(false);
+                        setAttachingChapter(null);
+                      }
+                    }}
+                    className="text-[11px] text-[#DC2626] hover:underline font-bold cursor-pointer"
+                  >
+                    Délier le quiz actuel
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#F1F5F9]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAttachQuizModalOpen(false);
+                  setAttachingChapter(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-[#64748B] hover:text-[#0F2C59]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={!selectedQuizIdToAttach || attachQuizMutation.isPending}
+                onClick={async () => {
+                  if (!selectedQuizIdToAttach) return;
+                  const chosenQuiz = quizzes?.find((q) => q.id === selectedQuizIdToAttach);
+                  await attachQuizMutation.mutateAsync({
+                    quiz_id: selectedQuizIdToAttach,
+                    quiz_titre: chosenQuiz?.titre || 'Évaluation',
+                    chapitre_id: attachingChapter.id,
+                    chapitre_titre: attachingChapter.titre,
+                    cours_id: attachingChapter.cours_id,
+                    cours_titre: attachingChapter.cours?.titre,
+                  });
+                  setIsAttachQuizModalOpen(false);
+                  setAttachingChapter(null);
+                }}
+                className="px-5 py-2.5 bg-[#0F2C59] hover:bg-[#0F2C59]/90 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
+                <span>{attachQuizMutation.isPending ? 'Enregistrement...' : 'Enregistrer le rattachement'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9) Modal: Preview Quiz Questions & Explanations */}
+      {previewingQuiz && (
+        <div className="fixed inset-0 bg-[#0F2C59]/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#0F2C59] text-[#D4AF37] flex items-center justify-center font-bold">
+                  <FileCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-[#0F2C59]">{previewingQuiz.titre}</h2>
+                  <p className="text-[11px] text-[#64748B]">
+                    {previewingQuiz.niveau} • {previewingQuiz.classe} • {previewingQuiz.duree_minutes} min • {previewingQuiz.total_questions || 10} Questions QCM
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewingQuiz(null)}
+                className="text-[#94A3B8] hover:text-[#0F2C59] text-sm p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {(previewingQuiz.questions || []).map((q, idx) => (
+                <div key={q.id || idx} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0F2C59]">Question #{q.numOrder || idx + 1}</span>
+                    <span className="text-[10px] bg-[#0F2C59]/10 text-[#0F2C59] font-bold px-2 py-0.5 rounded">
+                      {q.points || 1} Point
+                    </span>
+                  </div>
+                  <div className="text-xs font-semibold text-[#1E293B]">
+                    <RichTextView content={q.question} fallbackText="Énoncé manquant." />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                      const optText = q[`option${opt}` as keyof typeof q] as string;
+                      const isCorrect = q.correctOption === opt;
+                      return (
+                        <div
+                          key={opt}
+                          className={`p-2 rounded-lg text-xs border ${
+                            isCorrect
+                              ? 'bg-[#F0FDF4] border-[#86EFAC] text-[#166534] font-bold'
+                              : 'bg-white border-[#E2E8F0] text-[#475569]'
+                          }`}
+                        >
+                          <span className="mr-1.5">{opt})</span> {optText || '—'} {isCorrect && '✓ (Correct)'}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {q.explication && (
+                    <div className="text-[11px] text-[#475569] bg-white p-3 rounded-lg border border-[#F1F5F9] mt-2 space-y-1">
+                      <strong className="text-[#0F2C59] block">Corrigé explicatif :</strong>
+                      <RichTextView content={q.explication} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-[#F1F5F9]">
+              <button
+                type="button"
+                onClick={() => setPreviewingQuiz(null)}
+                className="px-4 py-2 bg-[#0F2C59] text-white text-xs font-bold rounded-xl shadow-xs"
               >
                 Fermer l'aperçu
               </button>

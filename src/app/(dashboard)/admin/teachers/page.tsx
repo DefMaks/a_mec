@@ -64,12 +64,12 @@ export default function AdminTeachersPage() {
   const assignClassesMutation = useAssignTeacherClasses();
 
   const handleResetTeachers = () => {
-    if (typeof window !== 'undefined' && confirm('Confirmez-vous le nettoyage des données fictives du personnel ? Seul Prof. Shasa Kanyinda et les profils réels de la base seront conservés.')) {
+    if (typeof window !== 'undefined' && confirm('Confirmez-vous la réinitialisation et synchronisation avec Supabase ? Les données locales temporaires seront purgées.')) {
       resetTeachersToDefault();
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
       queryClient.invalidateQueries({ queryKey: ['all_classes'] });
       queryClient.invalidateQueries({ queryKey: ['teacher-assignments'] });
-      setFeedbackMsg('Nettoyage effectué : les données fictives ont été purgées.');
+      setFeedbackMsg('Synchronisation effectuée : affichage des comptes réels de la base.');
       setTimeout(() => setFeedbackMsg(null), 5000);
     }
   };
@@ -351,11 +351,11 @@ export default function AdminTeachersPage() {
             <button
               type="button"
               onClick={handleResetTeachers}
-              className="flex items-center gap-2 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
-              title="Nettoyer les données fictives du personnel"
+              className="flex items-center gap-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F2C59] border border-[#CBD5E1] px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
+              title="Purger le cache local et re-synchroniser avec la base Supabase"
             >
-              <RotateCcw className="w-4 h-4 text-[#DC2626]" />
-              <span>Nettoyer données de test</span>
+              <RotateCcw className="w-4 h-4 text-[#0F2C59]" />
+              <span>Synchroniser avec Supabase</span>
             </button>
             <button
               onClick={handleOpenCreateTeacherModal}

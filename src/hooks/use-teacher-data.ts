@@ -233,7 +233,7 @@ export async function loadTeacherChapters(profileId: string | null) {
   const supabase = getSupabaseBrowserClient();
 
   try {
-    // 1) Récupérer les cours du professeur (Supabase + Simulation/Local)
+    // 1) Récupérer les cours du professeur (Supabase + Server Sync + Simulation/Local)
     let coursData: any[] = [];
     try {
       const { data, error: coursErr } = await supabase
@@ -245,13 +245,27 @@ export async function loadTeacherChapters(profileId: string | null) {
       }
     } catch {}
 
+    let syncCourses: any[] = [];
+    try {
+      const resSync = await fetch('/api/sync?type=courses');
+      const jsonSync = await resSync.json();
+      if (jsonSync.success && Array.isArray(jsonSync.data)) {
+        syncCourses = jsonSync.data;
+      }
+    } catch {}
+
     const localCourses = getStoredCourses();
-    if (localCourses.length === 0) {
-      return { cours: [], chapitres: [] };
-    }
 
     const coursesMap = new Map<string, any>();
-    localCourses.forEach((c) => coursesMap.set(c.id, c));
+    coursData.forEach((c) => coursesMap.set(c.id, c));
+    syncCourses.forEach((c) => {
+      const prev = coursesMap.get(c.id) || {};
+      coursesMap.set(c.id, { ...prev, ...c });
+    });
+    localCourses.forEach((c) => {
+      const prev = coursesMap.get(c.id) || {};
+      coursesMap.set(c.id, { ...prev, ...c });
+    });
 
     const coursList = Array.from(coursesMap.values());
     const coursIds = coursList.map((c) => c.id);
@@ -275,18 +289,23 @@ export async function loadTeacherChapters(profileId: string | null) {
       if (clsData) classesList = clsData;
     } catch {}
 
-    if (coursIds.length === 0) {
-      return { cours: [], chapitres: [] };
-    }
-
     // 2) Récupérer les chapitres par cours_id
     let dbChapitres: any[] = [];
     try {
       const { data: chapitresData } = await supabase
         .from('chapitres')
-        .select('*')
-        .in('cours_id', coursIds);
+        .select('*');
       if (chapitresData) dbChapitres = chapitresData;
+    } catch {}
+
+    // Récupérer chapitres synchronisés du serveur
+    let syncChapitres: any[] = [];
+    try {
+      const resCh = await fetch('/api/sync?type=chapitres');
+      const jsonCh = await resCh.json();
+      if (jsonCh.success && Array.isArray(jsonCh.data)) {
+        syncChapitres = jsonCh.data;
+      }
     } catch {}
 
     // Récupérer chapitres locaux
@@ -300,7 +319,7 @@ export async function loadTeacherChapters(profileId: string | null) {
 
     // Récupérer les chapitres définis dans les cours locaux
     const simulatedChapters: any[] = [];
-    localCourses.forEach((bc) => {
+    coursList.forEach((bc) => {
       if (bc.chapitres && Array.isArray(bc.chapitres)) {
         bc.chapitres.forEach((ch: any) => {
           simulatedChapters.push({
@@ -320,9 +339,10 @@ export async function loadTeacherChapters(profileId: string | null) {
     });
 
     const chMap = new Map<string, any>();
+    dbChapitres.forEach((ch) => chMap.set(ch.id, ch));
+    syncChapitres.forEach((ch) => chMap.set(ch.id, ch));
     simulatedChapters.forEach((ch) => chMap.set(ch.id, ch));
     localChapitres.forEach((ch) => chMap.set(ch.id, ch));
-    dbChapitres.forEach((ch) => chMap.set(ch.id, ch));
 
     const rawChapitres = Array.from(chMap.values()).sort((a: any, b: any) => {
       const posA = a.position ?? a.ordre ?? 1;
@@ -599,6 +619,18 @@ export function useCreateChapter() {
           created_at: new Date().toISOString(),
         };
       }
+
+      // Sauvegarder sur le serveur de synchronisation partagé
+      try {
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save_chapter',
+            payload: savedChapter,
+          }),
+        });
+      } catch {}
 
       if (typeof window !== 'undefined') {
         try {

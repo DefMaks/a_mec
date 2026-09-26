@@ -14,6 +14,11 @@ import {
   ShieldCheck,
   AlertCircle,
   HelpCircle,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  XCircle,
+  FileCheck,
 } from 'lucide-react';
 import { RichTextView } from '@/components/editor/rich-text-view';
 
@@ -26,6 +31,54 @@ export default function StudentQuizzesPage() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [isCompleted, setIsCompleted] = useState(false);
   const [score, setScore] = useState(0);
+  const [showDetailedReview, setShowDetailedReview] = useState(false);
+
+  // Helper to resolve question options in multiple formats
+  const getQuestionOptions = (q: any): { key: string; text: string }[] => {
+    if (!q) return [];
+    if (q.optionA || q.optionB || q.optionC || q.optionD) {
+      return [
+        { key: 'A', text: q.optionA || '' },
+        { key: 'B', text: q.optionB || '' },
+        { key: 'C', text: q.optionC || '' },
+        { key: 'D', text: q.optionD || '' },
+      ].filter((o) => Boolean(o.text));
+    }
+    if (Array.isArray(q.options) && q.options.length > 0) {
+      return q.options.map((opt: any, i: number) => ({
+        key: String.fromCharCode(65 + i),
+        text: typeof opt === 'string' ? opt : opt?.content || '',
+      }));
+    }
+    const raw = [
+      q.correct_answer,
+      ...(q.incorrect_answers || []),
+    ]
+      .map((opt) => (typeof opt === 'string' ? opt : opt?.content || ''))
+      .filter(Boolean);
+    if (raw.length > 0) {
+      return raw.sort().map((text, i) => ({
+        key: String.fromCharCode(65 + i),
+        text,
+      }));
+    }
+    return [];
+  };
+
+  // Helper to resolve correct answer
+  const getCorrectAnswerInfo = (q: any): { key: string; text: string } => {
+    if (!q) return { key: 'A', text: '' };
+    if (q.correctOption) {
+      const key = q.correctOption.toString().toUpperCase();
+      const text = q[`option${key}`] || '';
+      return { key, text };
+    }
+    if (q.correct_answer) {
+      const text = typeof q.correct_answer === 'string' ? q.correct_answer : q.correct_answer?.content || '';
+      return { key: '', text };
+    }
+    return { key: 'A', text: q.optionA || '' };
+  };
 
   // Démarrer un quiz
   const handleStartQuiz = (q: any) => {
@@ -34,6 +87,7 @@ export default function StudentQuizzesPage() {
     setSelectedAnswers({});
     setIsCompleted(false);
     setScore(0);
+    setShowDetailedReview(false);
   };
 
   // Sélectionner une réponse
@@ -52,9 +106,13 @@ export default function StudentQuizzesPage() {
 
     questions.forEach((q: any, idx: number) => {
       const selected = selectedAnswers[idx];
-      const correct = q.correct_answer?.content || q.correct_answer;
-      if (selected === correct) {
-        calculatedScore += 1;
+      const correct = getCorrectAnswerInfo(q);
+      if (
+        selected &&
+        ((correct.text && selected.trim().toLowerCase() === correct.text.trim().toLowerCase()) ||
+          (correct.key && selected === correct.key))
+      ) {
+        calculatedScore += q.points || 1;
       }
     });
 
@@ -154,29 +212,48 @@ export default function StudentQuizzesPage() {
 
                   {/* Options de réponse QCM */}
                   <div className="space-y-2.5">
-                    {[
-                      activeQuiz.questions[currentQuestionIdx].correct_answer,
-                      ...(activeQuiz.questions[currentQuestionIdx].incorrect_answers || []),
-                    ]
-                      .map((opt) => (typeof opt === 'string' ? opt : opt?.content || ''))
-                      .sort()
-                      .map((optContent, oIdx) => {
-                        const isSelected = selectedAnswers[currentQuestionIdx] === optContent;
+                    {(() => {
+                      const currentQ = activeQuiz.questions[currentQuestionIdx];
+                      const options = getQuestionOptions(currentQ);
+
+                      if (options.length === 0) {
+                        return (
+                          <p className="text-xs text-[#DC2626] p-3 bg-[#FEF2F2] rounded-xl border border-[#FEE2E2]">
+                            Options de réponse indisponibles pour cette question.
+                          </p>
+                        );
+                      }
+
+                      return options.map((opt, oIdx) => {
+                        const isSelected = selectedAnswers[currentQuestionIdx] === opt.text;
                         return (
                           <button
                             key={oIdx}
-                            onClick={() => handleSelectAnswer(optContent)}
-                            className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition flex items-center justify-between ${
+                            type="button"
+                            onClick={() => handleSelectAnswer(opt.text)}
+                            className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition flex items-center justify-between cursor-pointer ${
                               isSelected
                                 ? 'bg-[#0F2C59] text-white border-[#0F2C59] shadow-xs'
                                 : 'bg-white border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B]'
                             }`}
                           >
-                            <span>{optContent}</span>
-                            {isSelected && <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />}
+                            <span className="flex items-center gap-3">
+                              <span
+                                className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                  isSelected
+                                    ? 'bg-[#D4AF37] text-[#0F2C59]'
+                                    : 'bg-[#F1F5F9] text-[#64748B]'
+                                }`}
+                              >
+                                {opt.key}
+                              </span>
+                              <span className="leading-snug">{opt.text}</span>
+                            </span>
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />}
                           </button>
                         );
-                      })}
+                      });
+                    })()}
                   </div>
                 </div>
               ) : (
@@ -189,7 +266,7 @@ export default function StudentQuizzesPage() {
                   type="button"
                   disabled={currentQuestionIdx === 0}
                   onClick={() => setCurrentQuestionIdx((prev) => Math.max(0, prev - 1))}
-                  className="px-4 py-2 text-xs font-semibold text-[#64748B] hover:bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl disabled:opacity-40"
+                  className="px-4 py-2 text-xs font-semibold text-[#64748B] hover:bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl disabled:opacity-40 cursor-pointer"
                 >
                   Précédente
                 </button>
@@ -198,7 +275,7 @@ export default function StudentQuizzesPage() {
                   <button
                     type="button"
                     onClick={() => setCurrentQuestionIdx((prev) => prev + 1)}
-                    className="px-5 py-2 text-xs font-bold bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-xl transition shadow-xs flex items-center gap-1.5"
+                    className="px-5 py-2 text-xs font-bold bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>Suivante</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -207,7 +284,7 @@ export default function StudentQuizzesPage() {
                   <button
                     type="button"
                     onClick={handleFinishQuiz}
-                    className="px-5 py-2 text-xs font-bold bg-[#15803D] text-white hover:bg-[#15803D]/90 rounded-xl transition shadow-xs flex items-center gap-1.5"
+                    className="px-5 py-2 text-xs font-bold bg-[#15803D] text-white hover:bg-[#15803D]/90 rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Valider & Voir Note /10</span>
@@ -217,40 +294,141 @@ export default function StudentQuizzesPage() {
             </div>
           ) : (
             /* Résultat du Quiz */
-            <div className="text-center py-8 space-y-5">
-              <div className="w-16 h-16 rounded-2xl bg-[#EFF6FF] text-[#0F2C59] border border-[#0F2C59]/20 flex items-center justify-center mx-auto shadow-xs">
-                <Award className="w-8 h-8 text-[#D4AF37]" />
+            <div className="py-6 space-y-6">
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 rounded-2xl bg-[#EFF6FF] text-[#0F2C59] border border-[#0F2C59]/20 flex items-center justify-center mx-auto shadow-xs">
+                  <Award className="w-8 h-8 text-[#D4AF37]" />
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-extrabold text-[#0F2C59]">Évaluation Terminée !</h3>
+                  <p className="text-xs text-[#64748B]">Votre résultat officiel est calculé sur 10 points.</p>
+                </div>
+
+                <div className="inline-block bg-[#F8FAFC] border border-[#E2E8F0] px-8 py-4 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block">
+                    Note Obtenue
+                  </span>
+                  <span className="text-4xl font-extrabold text-[#0F2C59] font-tabular">
+                    {score} <span className="text-lg text-[#64748B]">/ {activeQuiz.questions?.length || 10}</span>
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDetailedReview((prev) => !prev)}
+                    className="px-4 py-2 bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#0F2C59] border border-[#D4AF37]/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <FileCheck className="w-4 h-4 text-[#D4AF37]" />
+                    <span>{showDetailedReview ? 'Masquer le Corrigé' : 'Consulter le Corrigé Détaillé (10 Questions)'}</span>
+                    {showDetailedReview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleStartQuiz(activeQuiz)}
+                    className="px-4 py-2 bg-white text-[#0F2C59] border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Recommencer</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveQuiz(null)}
+                    className="px-4 py-2 bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-xl text-xs font-bold transition cursor-pointer"
+                  >
+                    Choisir un autre test
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <h3 className="text-xl font-extrabold text-[#0F2C59]">Évaluation Terminée !</h3>
-                <p className="text-xs text-[#64748B] mt-1">Votre résultat a été enregistré avec succès.</p>
-              </div>
+              {/* Corrigé Pédagogique Détaillé */}
+              {showDetailedReview && (
+                <div className="border-t border-[#F1F5F9] pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-[#0F2C59] flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Corrigé Pédagogique des 10 Questions</span>
+                    </h4>
+                    <span className="text-xs text-[#64748B]">
+                      {score} / {activeQuiz.questions?.length || 10} correctes
+                    </span>
+                  </div>
 
-              <div className="inline-block bg-[#F8FAFC] border border-[#E2E8F0] px-6 py-4 rounded-2xl">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block">
-                  Note Obtenue
-                </span>
-                <span className="text-4xl font-extrabold text-[#0F2C59] font-tabular">
-                  {score} <span className="text-lg text-[#64748B]">/ {activeQuiz.questions?.length || 10}</span>
-                </span>
-              </div>
+                  <div className="space-y-4">
+                    {(activeQuiz.questions || []).map((q: any, idx: number) => {
+                      const selected = selectedAnswers[idx];
+                      const correct = getCorrectAnswerInfo(q);
+                      const isCorrect =
+                        selected &&
+                        ((correct.text && selected.trim().toLowerCase() === correct.text.trim().toLowerCase()) ||
+                          (correct.key && selected === correct.key));
 
-              <div className="flex items-center justify-center gap-3 pt-4">
-                <button
-                  onClick={() => handleStartQuiz(activeQuiz)}
-                  className="px-4 py-2 bg-white text-[#0F2C59] border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition flex items-center gap-1.5"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Recommencer</span>
-                </button>
-                <button
-                  onClick={() => setActiveQuiz(null)}
-                  className="px-4 py-2 bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-xl text-xs font-bold transition"
-                >
-                  Choisir un autre test
-                </button>
-              </div>
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-4 rounded-xl border text-xs space-y-2.5 ${
+                            isCorrect
+                              ? 'bg-[#F0FDF4] border-[#86EFAC]'
+                              : 'bg-[#FEF2F2] border-[#FECACA]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[#0F2C59]">Question #{q.numOrder || idx + 1}</span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
+                                isCorrect
+                                  ? 'bg-[#DCFCE7] text-[#15803D]'
+                                  : 'bg-[#FEE2E2] text-[#DC2626]'
+                              }`}
+                            >
+                              {isCorrect ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3" /> Bonne réponse (+1 pt)
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-3 h-3" /> Réponse incorrecte (0 pt)
+                                </>
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="font-medium text-[#1E293B]">
+                            <RichTextView content={q.question} />
+                          </div>
+
+                          <div className="space-y-1 bg-white p-3 rounded-lg border border-[#E2E8F0]">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[#64748B]">Votre sélection :</span>
+                              <strong className={isCorrect ? 'text-[#16A34A]' : 'text-[#DC2626]'}>
+                                {selected || 'Aucune sélection'}
+                              </strong>
+                            </div>
+                            {!isCorrect && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[#64748B]">Bonne réponse :</span>
+                                <strong className="text-[#16A34A]">
+                                  {correct.key && `${correct.key}) `} {correct.text}
+                                </strong>
+                              </div>
+                            )}
+                          </div>
+
+                          {q.explication && (
+                            <div className="text-[11px] text-[#475569] bg-white p-2.5 rounded-lg border border-[#E2E8F0] space-y-1">
+                              <strong className="text-[#0F2C59] block">Explication pédagogique :</strong>
+                              <RichTextView content={q.explication} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -278,6 +456,14 @@ export default function StudentQuizzesPage() {
                 <p className="text-xs text-[#64748B] mt-1">
                   {q.matiere_nom || q.classe || 'Matière STEM'} • Durée : {q.duree_minutes} minutes
                 </p>
+
+                {/* Leçon associée si rattaché */}
+                {q.chapitre_titre && (
+                  <div className="flex items-center gap-1.5 text-xs text-[#008080] font-medium mt-2 bg-[#F0FDFA] p-2 rounded-lg border border-[#CCFBF1]">
+                    <BookOpen className="w-3.5 h-3.5 text-[#008080] flex-shrink-0" />
+                    <span className="truncate">Leçon : {q.chapitre_titre}</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-[#F1F5F9] flex items-center justify-between">
@@ -286,8 +472,9 @@ export default function StudentQuizzesPage() {
                   Corrigé officiel
                 </span>
                 <button
+                  type="button"
                   onClick={() => handleStartQuiz(q)}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 text-xs font-bold transition flex items-center gap-1"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                 >
                   <Award className="w-3 h-3 text-[#D4AF37]" />
                   <span>Passer le test</span>

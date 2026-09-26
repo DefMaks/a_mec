@@ -135,7 +135,73 @@ export function useTeachers(
 
       const allClassesList = Array.from(mergedClassesMap.values());
 
-      // 2. Récupérer les profils depuis Supabase
+      // 2. Récupérer les enseignants synchronisés multi-appareils (Server Sync API + Supabase table 'teacher')
+      let syncTeachers: any[] = [];
+      try {
+        const resSync = await fetch('/api/sync?type=teachers', { cache: 'no-store' });
+        const jsonSync = await resSync.json();
+        if (jsonSync.success && Array.isArray(jsonSync.data)) {
+          syncTeachers = jsonSync.data.filter((t: any) => !REMOVED_DEFAULT_TEACHER_IDS.includes(t.id));
+        }
+      } catch {}
+
+      let dbTeachersList: any[] = [];
+      try {
+        const { data: tData, error: tErr } = await supabase
+          .from('teacher')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!tErr && tData) {
+          tData.forEach((tRow: any) => {
+            const targetId = tRow.profile_id || tRow.id;
+            if (REMOVED_DEFAULT_TEACHER_IDS.includes(targetId)) return;
+
+            let parsedMeta: any = null;
+            if (tRow.specialite && tRow.specialite.startsWith('{')) {
+              try {
+                parsedMeta = JSON.parse(tRow.specialite);
+              } catch {}
+            }
+            if (parsedMeta) {
+              dbTeachersList.push({
+                id: targetId,
+                nom_complet: parsedMeta.nom_complet,
+                email: parsedMeta.email,
+                telephone: parsedMeta.telephone,
+                role: parsedMeta.role || 'teacher',
+                ecole_id: parsedMeta.ecole_id || DEFAULT_SCHOOL_ID,
+                specialite: parsedMeta.specialite,
+                assigned_class_ids: parsedMeta.assigned_class_ids || [],
+                titulaire_class_ids: parsedMeta.titulaire_class_ids || [],
+                active: true,
+                actif: true,
+                created_at: tRow.created_at,
+              });
+            } else if (tRow.profile_id) {
+              // Profil de base
+              dbTeachersList.push({
+                id: tRow.profile_id,
+                nom_complet: tRow.specialite ? `Enseignant (${tRow.specialite})` : 'Enseignant',
+                email: `prof.${tRow.profile_id.slice(0, 8)}@academiedusalut.cd`,
+                telephone: '+243 81 000 0000',
+                role: 'teacher',
+                ecole_id: DEFAULT_SCHOOL_ID,
+                specialite: tRow.specialite || 'Enseignement Primaire',
+                assigned_class_ids: [],
+                titulaire_class_ids: [],
+                active: true,
+                actif: true,
+                created_at: tRow.created_at,
+              });
+            }
+          });
+        }
+      } catch (err: any) {
+        console.warn('Erreur résiliente lecture Supabase teacher table:', err?.message);
+      }
+
+      // 3. Récupérer les profils depuis Supabase profiles si accessible
       let baseProfiles: any[] = [];
       try {
         let query = supabase
@@ -152,15 +218,15 @@ export function useTeachers(
         console.warn('Erreur résiliente teachers query:', err?.message);
       }
 
-      // 3. Fusionner baseProfiles + DEFAULT_TEACHERS + localTeachers
+      // 4. Fusionner baseProfiles + dbTeachersList + syncTeachers + DEFAULT_TEACHERS + localTeachers
       const mergedMap = new Map<string, any>();
 
-      // Insérer les enseignants par défaut
+      // Insérer les enseignants par défaut (Prof. Shasa Kanyinda)
       DEFAULT_TEACHERS.forEach((t) => {
         mergedMap.set(t.id, { ...t });
       });
 
-      // Insérer ou mettre à jour avec Supabase
+      // Insérer les profils authentiques de Supabase profiles
       baseProfiles.forEach((p) => {
         const existing = mergedMap.get(p.id) || {};
         mergedMap.set(p.id, {
@@ -170,7 +236,25 @@ export function useTeachers(
         });
       });
 
-      // Insérer ou écraser avec les modifications locales explicites
+      // Insérer les enseignants de la table 'teacher' de Supabase
+      dbTeachersList.forEach((dt) => {
+        const existing = mergedMap.get(dt.id) || {};
+        mergedMap.set(dt.id, {
+          ...existing,
+          ...dt,
+        });
+      });
+
+      // Insérer les enseignants synchronisés multi-appareils (Server Sync API)
+      syncTeachers.forEach((st) => {
+        const existing = mergedMap.get(st.id) || {};
+        mergedMap.set(st.id, {
+          ...existing,
+          ...st,
+        });
+      });
+
+      // Insérer ou écraser avec les modifications créées/sauvegardées localement
       localTeachers.forEach((lt) => {
         const existing = mergedMap.get(lt.id) || {};
         mergedMap.set(lt.id, {
@@ -269,7 +353,8 @@ export function useTeachers(
 
       return results;
     },
-    staleTime: 1000 * 30, // 30 secondes pour une réactivité instantanée
+    staleTime: 1000 * 5, // 5 secondes pour une réactivité multi-appareils instantanée
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -362,7 +447,7 @@ export function useCreateTeacher() {
         } catch {}
       }
 
-      // 3. Sauvegarder dans le stockage local pour affichage immédiat
+      // 3. Sauvegarder dans le stockage local et dans l'API de synchronisation partagée multi-appareils
       const newTeacher: any = {
         id: createdId,
         nom_complet: teacherData.nom_complet,
@@ -370,6 +455,7 @@ export function useCreateTeacher() {
         telephone: teacherData.telephone || '+243 81 000 0000',
         role: targetRole,
         ecole_id: targetSchoolId,
+        specialite: teacherData.specialite || 'Enseignement Primaire',
         active: true,
         actif: true,
         password: finalPassword,
@@ -377,6 +463,49 @@ export function useCreateTeacher() {
         assigned_class_ids: assignedClassIds,
         titulaire_class_ids: titulaireClassIds,
       };
+
+      // Mettre à jour Supabase table 'teacher' pour synchronisation cross-device pérenne
+      try {
+        const metaPayload = JSON.stringify({
+          nom_complet: newTeacher.nom_complet,
+          email: newTeacher.email,
+          telephone: newTeacher.telephone,
+          role: newTeacher.role,
+          specialite: newTeacher.specialite,
+          assigned_class_ids: assignedClassIds,
+          titulaire_class_ids: titulaireClassIds,
+          ecole_id: targetSchoolId,
+        });
+
+        const { data: upT } = await supabase
+          .from('teacher')
+          .update({ specialite: metaPayload })
+          .eq('profile_id', createdId)
+          .select();
+
+        if (!upT || upT.length === 0) {
+          await supabase.from('teacher').insert([{
+            profile_id: createdId,
+            specialite: metaPayload,
+          }]);
+        }
+      } catch (err: any) {
+        console.warn('Erreur mise à jour table teacher Supabase:', err?.message);
+      }
+
+      // Synchroniser avec l'API serveur Next.js pour partage immédiat PC <-> Mobile
+      try {
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save_teacher',
+            payload: newTeacher,
+          }),
+        });
+      } catch (err: any) {
+        console.warn('Erreur API sync save_teacher:', err?.message);
+      }
 
       const stored = getStoredTeachers();
       saveStoredTeachers([...stored, newTeacher]);
@@ -501,7 +630,41 @@ export function useUpdateTeacher() {
         } catch {}
       }
 
-      // 3. Tenter la mise à jour Supabase du profil (colonnes supportées: nom_complet, role, ecole_id)
+      // 3. Tenter la mise à jour Supabase de la table teacher et profile
+      try {
+        const metaPayload = JSON.stringify({
+          nom_complet: updatedRecord.nom_complet,
+          email: updatedRecord.email,
+          telephone: updatedRecord.telephone,
+          role: updatedRecord.role,
+          specialite: (existingIdx >= 0 && stored[existingIdx]?.specialite) || 'Enseignement Primaire',
+          assigned_class_ids: updatedRecord.assigned_class_ids,
+          titulaire_class_ids: updatedRecord.titulaire_class_ids,
+          ecole_id: updatedRecord.ecole_id,
+        });
+
+        await supabase
+          .from('teacher')
+          .update({ specialite: metaPayload })
+          .eq('profile_id', id);
+      } catch (err: any) {
+        console.warn('Erreur mise à jour table teacher Supabase:', err?.message);
+      }
+
+      // Synchroniser avec l'API serveur Next.js pour partage immédiat PC <-> Mobile
+      try {
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save_teacher',
+            payload: updatedRecord,
+          }),
+        });
+      } catch (err: any) {
+        console.warn('Erreur API sync save_teacher:', err?.message);
+      }
+
       try {
         const updateObj: any = { nom_complet };
         if (role) updateObj.role = role;
@@ -615,6 +778,28 @@ export function useAssignTeacherClasses() {
 
       saveStoredTeacherClassesMap(teacherMap);
       saveStoredClassTitulaireMap(titulaireMap);
+
+      // Synchroniser l'objet enseignant dans getStoredTeachers() et /api/sync
+      const stored = getStoredTeachers();
+      const existing = stored.find((t) => t.id === teacherId);
+      if (existing) {
+        existing.assigned_class_ids = assignedClassIds;
+        existing.titulaire_class_ids = titulaireClassIds;
+        saveStoredTeachers(stored);
+
+        try {
+          await fetch('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'save_teacher',
+              payload: existing,
+            }),
+          });
+        } catch (err: any) {
+          console.warn('Erreur API sync assign classes:', err?.message);
+        }
+      }
 
       // 3. Mettre à jour les classes custom
       if (typeof window !== 'undefined') {

@@ -78,6 +78,7 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
     queryKey: ['courses', classeId, isSuperAdmin],
     queryFn: async (): Promise<CourseItem[]> => {
       try {
+        // 1. Récupérer les cours depuis Supabase
         let coursData: any[] = [];
         try {
           const { data, error } = await supabase
@@ -92,30 +93,32 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
           console.warn('Erreur chargement cours Supabase:', err?.message);
         }
 
-        // Vérifier la réinitialisation automatique v2
-        if (typeof window !== 'undefined' && !localStorage.getItem('e_rdc_reset_applied_v2')) {
-          try {
-            localStorage.removeItem(LOCAL_COURSES_KEY);
-            localStorage.removeItem(LOCAL_CHAPTERS_KEY);
-            localStorage.removeItem('e_rdc_custom_courses_v1');
-            localStorage.removeItem('e_rdc_custom_chapters_v1');
-            localStorage.removeItem('ads_custom_quizzes_v1');
-            localStorage.removeItem('e_rdc_cours_classes_assignments');
-            localStorage.setItem('e_rdc_reset_applied_v2', 'true');
-          } catch {}
-        }
+        // 2. Récupérer les cours synchronisés via le serveur (partagés tous appareils)
+        let syncCourses: any[] = [];
+        try {
+          const resSync = await fetch('/api/sync?type=courses');
+          const jsonSync = await resSync.json();
+          if (jsonSync.success && Array.isArray(jsonSync.data)) {
+            syncCourses = jsonSync.data;
+          }
+        } catch {}
 
-        // Récupérer les cours stockés localement (remis à zéro par défaut)
+        // 3. Récupérer les cours stockés localement
         const localCourses = getStoredCourses();
-        if (localCourses.length === 0) {
-          return [];
-        }
 
-        const mergedCourses = [...localCourses];
+        // 4. Fusionner tous les cours par identifiant unique
+        const coursesMap = new Map<string, any>();
+        coursData.forEach((c) => coursesMap.set(c.id, c));
+        syncCourses.forEach((c) => {
+          const prev = coursesMap.get(c.id) || {};
+          coursesMap.set(c.id, { ...prev, ...c });
+        });
+        localCourses.forEach((c) => {
+          const prev = coursesMap.get(c.id) || {};
+          coursesMap.set(c.id, { ...prev, ...c });
+        });
 
-        if (mergedCourses.length === 0) {
-          return [];
-        }
+        const mergedCourses = Array.from(coursesMap.values());
 
         let matieresList: any[] = [];
         let chapitresList: any[] = [];
@@ -128,6 +131,19 @@ export function useCourses(classeId?: string, isSuperAdmin: boolean = false) {
         try {
           const { data: chData } = await supabase.from('chapitres').select('*');
           if (chData) chapitresList = chData;
+        } catch {}
+
+        // Récupérer les chapitres synchronisés du serveur
+        try {
+          const resCh = await fetch('/api/sync?type=chapitres');
+          const jsonCh = await resCh.json();
+          if (jsonCh.success && Array.isArray(jsonCh.data)) {
+            jsonCh.data.forEach((sch: any) => {
+              if (!chapitresList.some((c) => c.id === sch.id)) {
+                chapitresList.push(sch);
+              }
+            });
+          }
         } catch {}
 
         // Récupérer les chapitres locaux
@@ -267,7 +283,18 @@ export function useCreateCourse() {
         };
       }
 
-      // Persistance dans le cache local des cours
+      // Persistance dans le cache local des cours et sur le serveur partagé
+      try {
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save_course',
+            payload: insertedCourse,
+          }),
+        });
+      } catch {}
+
       try {
         const stored = getStoredCourses();
         saveStoredCourses([

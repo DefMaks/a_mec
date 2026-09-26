@@ -1,0 +1,85 @@
+{
+  "teachers": [
+    {
+      "id": "b6416211-0e05-4432-85e9-c5b3b243e543",
+      "nom_complet": "Prof. Shasa Kanyinda",
+      "email": "shasa.kanyinda@academiedusalut.cd",
+      "telephone": "+243 81 234 5678",
+      "role": "teacher",
+      "specialite": "STEM / Math-Physique & TICE",
+      "active": true,
+      "actif": true,
+      "assigned_class_ids": [
+        "730145b3-b30f-4aff-b0ab-c7550849d5fe"
+      ],
+      "titulaire_class_ids": [
+        "730145b3-b30f-4aff-b0ab-c7550849d5fe"
+      ],
+      "ecole_id": "64c583de-e9e2-456b-8942-164656544661",
+      "created_at": "2026-03-01T00:00:00.000Z"
+    },
+    {
+      "id": "4a983115-d439-4267-aeb9-15b9269c99f2",
+      "nom_complet": "Enseignant Titulaire Primaire",
+      "email": "titulaire.primaire@academiedusalut.cd",
+      "telephone": "+243 81 555 1234",
+      "role": "teacher",
+      "specialite": "Enseignement Primaire",
+      "active": true,
+      "actif": true,
+      "assigned_class_ids": [
+        "730145b3-b30f-4aff-b0ab-c7550849d5fe"
+      ],
+      "titulaire_class_ids": [
+        "730145b3-b30f-4aff-b0ab-c7550849d5fe"
+      ],
+      "ecole_id": "64c583de-e9e2-456b-8942-164656544661",
+      "created_at": "2026-09-24T09:06:15.308286+00:00"
+    },
+    {
+      "id": "92c8b4c9-80fb-42cc-9105-dced5e6cb94b",
+      "nom_complet": "Enseignant Primaire Adjoint",
+      "email": "enseignant.primaire@academiedusalut.cd",
+      "telephone": "+243 81 555 5678",
+      "role": "teacher",
+      "specialite": "Enseignement primaire",
+      "active": true,
+      "actif": true,
+      "assigned_class_ids": [
+        "730145b3-b30f-4aff-b0ab-c7550849d5fe"
+      ],
+      "titulaire_class_ids": [],
+      "ecole_id": "64c583de-e9e2-456b-8942-164656544661",
+      "created_at": "2026-09-24T08:52:32.18851+00:00"
+    },
+    {
+      "id": "de1cb1be-0b26-4bba-bd20-411399c13238",
+      "nom_complet": "Prof Test Synchronisation PC-Mobile",
+      "email": "test_enseignant_1790342280851@academiedusalut.cd",
+      "telephone": "+243 81 000 0099",
+      "role": "teacher",
+      "specialite": "Informatique & Mathématiques",
+      "active": true,
+      "actif": true,
+      "assigned_class_ids": [
+        "730145b3-b30f-4aff-b0ab-c7550849d5fe"
+      ],
+      "titulaire_class_ids": [],
+      "ecole_id": "64c583de-e9e2-456b-8942-164656544661",
+      "created_at": "2026-09-25T13:18:02.128561+00:00"
+    }
+  ],
+  "quizzes": [],
+  "courses": [],
+  "chapitres": [],
+  "quiz_attachments": {
+    "f27f1eec-b8e7-4365-ace7-b9309a4371f0": {
+      "quiz_id": "cb436cdb-c816-4183-91c5-b5cc4c9fce80",
+      "quiz_titre": "Quiz QCM 10 questions (Primaire - Mix)",
+      "chapitre_id": "f27f1eec-b8e7-4365-ace7-b9309a4371f0",
+      "cours_id": "0430841f-f4cc-4e3d-977f-91b6adf37139",
+      "updated_at": "2026-09-25T13:24:46.160Z"
+    }
+  },
+  "updated_at": "2026-09-25T13:24:46.160Z"
+}
